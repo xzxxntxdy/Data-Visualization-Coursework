@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COCO-Verse: Semantic Analysis</title>
+    <style>
+        :root {
+            /* 核心色板 - 更加现代的冷灰色系 */
+            --bg-body: #f8fafc;        /* 极淡的冷灰背景 */
+            --bg-panel: #ffffff;       /* 纯白面板 */
+            
+            /* 侧边栏色系 - 深邃午夜蓝 */
+            --sidebar-bg: #0f172a;     
+            --sidebar-text: #94a3b8;
+            --sidebar-text-hover: #f1f5f9;
+            
+            /* 强调色 - 现代靛蓝 (Indigo) */
+            --accent: #6366f1;         
+            --accent-hover: #4f46e5;
+            --accent-light: #e0e7ff;   /* 浅色背景用于Tag */
+            --accent-text: #4338ca;    /* 深色文字用于Tag */
+
+            /* 文字颜色 */
+            --text-main: #1e293b;      /* 深灰黑色，比纯黑更柔和 */
+            --text-muted: #64748b;     /* 次级文字 */
+            
+            /* 边框与装饰 */
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --radius-md: 12px;
+            --heat-start: #f8fafc;
+            --heat-mid: #fee0d2;
+            --heat-strong: #fb6a4a;
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased; /* 让字体更清晰 */
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 240px 1fr; /* 稍微加宽侧边栏 */
+            gap: 20px;
+            padding: 20px;
+            box-sizing: border-box;
+            height: 100vh;
+        }
+
+        /* --- 侧边栏优化 --- */
+        .sidebar {
+            background: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .sidebar h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.5px;
+        }
+
+        .sidebar p {
+            color: #64748b !important; /* 强制覆盖 */
+            margin-top: 4px;
+        }
+
+        .nav-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 12px;
+        }
+
+        .nav-item {
+            width: 100%;
+            text-align: left;
+            padding: 12px 14px;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--sidebar-text);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--sidebar-text-hover);
+        }
+
+        .nav-item.active {
+            background: var(--accent);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4); /* 增加发光感 */
+        }
+
+        /* --- 主视图区域 --- */
+        .view-area {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            min-height: 0;
+        }
+
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            transition: box-shadow 0.2s;
+        }
+        
+        /* 头部样式 */
+        .header {
+            border: none;
+            background: transparent;
+            box-shadow: none;
+            padding: 0 0 4px 0;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
+        }
+
+        .view {
+            display: none;
+            flex: 1;
+            min-height: 0;
+        }
+        .view.active {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .semantic-panel {
+            height: 100%;
+            box-shadow: var(--shadow-md);
+        }
+
+        .panel-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .panel-head h1 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin: 0;
+        }
+        
+        .panel-head p {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .tag {
+            background: var(--accent-light);
+            color: var(--accent-text);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            border: none;
+        }
+
+        /* --- 控件区优化 --- */
+        .control-strip {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr auto; /* 调整比例 */
+            gap: 16px;
+            align-items: end;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 16px;
+        }
+
+        .control-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .control-group input[type="text"] {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            font-size: 14px;
+            color: var(--text-main);
+            background: #fff;
+            outline: none;
+            box-sizing: border-box;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .control-group input[type="text"]:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); /* 聚焦光晕 */
+        }
+
+        /* 滑动条美化 */
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--accent);
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .ghost-btn {
+            height: 38px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: #fff;
+            color: var(--text-main);
+            padding: 0 16px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .ghost-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-light);
+        }
+
+        .mini-meta {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-muted);
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+
+        .excluded-chip {
+            padding: 4px 10px;
+            background: #f1f5f9;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-main);
+            font-size: 12px;
+            margin-right: 4px;
+            cursor: pointer;
+        }
+        .excluded-chip:hover {
+            background: #e2e8f0;
+            color: #ef4444; /* 删除时变红 */
+            border-color: #fca5a5;
+        }
+
+        /* --- 图表区域 --- */
+        .semantic-layout {
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            gap: 16px;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .graph-area {
+            /* 技术感网格背景 */
+            background-color: #fafafa;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            position: relative;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.02);
+        }
+
+        .side-info {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            background: #fff;
+            font-size: 13px;
+            overflow-y: auto;
+        }
+
+        .info-title {
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 8px;
+            font-size: 14px;
+            padding-bottom: 8px;
+            border-bottom: 1px dashed var(--border-color);
+        }
+
+        .info-list {
+            margin: 0;
+            padding-left: 20px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* 占位符样式 */
+        .placeholder {
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed var(--border-color);
+            background: #f8fafc;
+        }
+        .placeholder-text {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .tooltip {
+            position: absolute;
+            padding: 8px 12px;
+            background: #1e293b;
+            color: #fff;
+            border-radius: 6px;
+            pointer-events: none;
+            font-size: 12px;
+            display: none;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+
+        /* --- 新增：统计与矩阵视图 --- */
+        .stats-layout {
+            display: grid;
+            grid-template-columns: 1.15fr 1fr;
+            gap: 16px;
+            min-height: 0;
+            flex: 1;
+        }
+
+        .subpanel {
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 14px;
+            background: #fff;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .subpanel h2 {
+            margin: 0 0 8px 0;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: space-between;
+        }
+
+        .bar-chart-wrapper, .matrix-wrapper {
+            position: relative;
+            flex: 1;
+            min-height: 320px;
+        }
+
+        #freq-bar, #cond-matrix {
+            width: 100%;
+            height: 100%;
+        }
+
+        .matrix-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 4px;
+            margin-bottom: 8px;
+        }
+
+        .chip-btn {
+            border: 1px solid var(--border-color);
+            background: #fff;
+            color: var(--text-main);
+            padding: 6px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+        .chip-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-light);
+        }
+
+        .icon-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 8px;
+        }
+        .icon-badge img {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+            cursor: pointer;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));
+            transition: transform 0.15s ease;
+        }
+        .icon-badge img:hover {
+            transform: translateY(-2px);
+        }
+
+        .info-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+        .info-modal.active { display: flex; }
+        .info-card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            width: min(900px, 90vw);
+            max-height: 85vh;
+            overflow: auto;
+        }
+        .info-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+        }
+        .info-card p {
+            margin: 6px 0;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+        .modal-image {
+            width: 100%;
+            height: auto;
+            max-height: 70vh;
+            object-fit: contain;
+            display: block;
+            border-radius: 8px;
+            box-shadow: var(--shadow-sm);
+        }
+        .zoom-wrap {
+            width: 100%;
+            max-height: 72vh;
+            overflow: auto;
+            background: #f8fafc;
+            padding: 6px;
+            border-radius: 10px;
+        }
+        .info-close {
+            margin-top: 12px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        .head-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .corner-icons {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .corner-icons img {
+            width: 52px;
+            height: 52px;
+            cursor: pointer;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));
+            transition: transform 0.15s ease;
+        }
+        .corner-icons img:hover {
+            transform: translateY(-2px);
+        }
+        .icon-hint {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-align: center;
+            line-height: 1.4;
+        }
+        .side-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .mini-icons {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .mini-icons img {
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));
+            transition: transform 0.15s ease;
+        }
+        .mini-icons img:hover { transform: translateY(-1px); }
+        .mini-icons .icon-hint {
+            font-size: 11px;
+            color: var(--text-muted);
+            line-height: 1.2;
+        }
+
+        @media (max-width: 1100px) {
+            .stats-layout {
+                grid-template-columns: 1fr;
+            }
+            .matrix-wrapper {
+                min-height: 360px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="dashboard">
+        <aside class="sidebar">
+            <div>
+                <h2>COCO-Verse</h2>
+                <p style="font-size:12px; opacity:0.7;">Semantic Analysis Tool</p>
+            </div>
+            
+            <div class="nav-group">
+                <button class="nav-item active" data-target="semantic-view">
+                    <span>语义共现网络</span>
+                </button>
+                <button class="nav-item" data-target="spatial-view">
+                    <span>空间 / 尺度视图</span>
+                </button>
+                <button class="nav-item" data-target="pose-view">
+                    <span>姿态 / 骨架视图</span>
+                </button>
+            </div>
+        </aside>
+
+        <section class="view-area">
+            <div class="header">
+                <h1>COCO-Verse 多视图分析</h1>
+            </div>
+
+            <section class="view active" id="semantic-view">
+                <section class="panel semantic-panel">
+                    <div class="panel-head">
+                        <div>
+                            <h1>语义关联与关系网络</h1>
+                            <p>拖拽、缩放以探索类别间的共现偏好</p>
+                        </div>
+                        <div class="head-actions">
+                            <div class="tag">Semantic Graph</div>
+                        </div>
+                    </div>
+
+                    <div class="control-strip">
+                        <div class="control-group">
+                            <label for="focusInput">聚焦类别</label>
+                            <div style="display:flex; gap:8px;">
+                                <input type="text" id="focusInput" list="categoryOptions" placeholder="搜索节点 (如: person)...">
+                                <button class="ghost-btn" id="clearFocus" type="button">清除</button>
+                            </div>
+                        </div>
+                        <div class="control-group slider">
+                            <label for="linkThreshold" style="display:flex; justify-content:space-between;">
+                                <span>最小共现次数</span>
+                                <span id="thresholdValue" style="color:var(--accent);">0</span>
+                            </label>
+                            <input type="range" id="linkThreshold" min="0" max="1000" step="10" value="0">
+                        </div>
+                        <button class="ghost-btn" id="resetFilters" type="button" style="height:42px; align-self:end;">重置筛选</button>
+                    </div>
+
+                    <div class="mini-meta">
+                        <span>排除列表：<span id="excludedList">无 (双击节点排除)</span></span>
+                        <span id="hoverInfo" style="color:var(--accent);">悬停节点查看详情</span>
+                    </div>
+
+                    <div class="semantic-layout">
+                        <div id="semantic-graph" class="graph-area"></div>
+                        
+                        <div id="selectionInfo" class="side-info">
+                            <div class="side-header">
+                                <div class="info-title" style="margin:0;">节点详情</div>
+                                <div class="mini-icons">
+                                    <div class="icon-hint">点击查看</div>
+                                    <img src="./icon/Bar_Icon.png" alt="Bar Icon" id="semanticBarIcon">
+                                    <img src="./icon/Relation Matrix Icon.png" alt="Matrix Icon" id="semanticMatrixIcon">
+                                </div>
+                            </div>
+                            <div id="selectionContent" style="color:var(--text-muted);">
+                                点击画布中的节点，此处将显示共现概率与详细统计数据。
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </section>
+
+            <section class="view" id="spatial-view">
+                <section class="panel placeholder">
+                    <div class="placeholder-text">空间 / 尺度视图开发中</div>
+                </section>
+            </section>
+
+            <section class="view" id="pose-view">
+                <section class="panel placeholder">
+                    <div class="placeholder-text">姿态 / 骨架视图开发中</div>
+                </section>
+            </section>
+        </section>
+    </main>
+    
+    <datalist id="categoryOptions"></datalist>
+    <div class="tooltip" id="tooltip"></div>
+    <div class="info-modal" id="bar-info">
+        <div class="info-card">
+            <h3>长尾频次分布</h3>
+            <p style="margin:4px 0 10px; color:var(--text-muted); font-size:13px;">滚轮缩放、拖动滚动条可查看全部标签，双击图片可重置。</p>
+            <div class="zoom-wrap">
+                <img class="modal-image zoomable" src="./icon/freq_bar.png" alt="长尾频次分布">
+            </div>
+            <button class="info-close" data-close="bar-info">关闭</button>
+        </div>
+    </div>
+    <div class="info-modal" id="matrix-info">
+        <div class="info-card">
+            <h3>条件概率矩阵</h3>
+            <p style="margin:4px 0 10px; color:var(--text-muted); font-size:13px;">滚轮缩放、拖动滚动条可查看全部标签，双击图片可重置。</p>
+            <div class="zoom-wrap">
+                <img class="modal-image zoomable" src="./icon/cond_matrix.png" alt="条件概率矩阵">
+            </div>
+            <button class="info-close" data-close="matrix-info">关闭</button>
+        </div>
+    </div>
+
+    <script type="module" src="./js/semantic_graph.js"></script>
+    <script>
+        const navButtons = Array.from(document.querySelectorAll('.nav-item'));
+        const views = Array.from(document.querySelectorAll('.view'));
+        const semanticBarIcon = document.getElementById('semanticBarIcon');
+        const semanticMatrixIcon = document.getElementById('semanticMatrixIcon');
+
+        const activateView = (targetId) => {
+            navButtons.forEach((b) => b.classList.toggle('active', b.dataset.target === targetId));
+            views.forEach((v) => v.classList.toggle('active', v.id === targetId));
+            setTimeout(() => window.dispatchEvent(new Event('resize')), 30);
+        };
+
+        navButtons.forEach((btn) => {
+            btn.addEventListener('click', () => activateView(btn.dataset.target));
+        });
+
+        const openModal = (id) => {
+            const modal = document.getElementById(id);
+            if (modal) modal.classList.add('active');
+        };
+
+        const wireModalClose = () => {
+            document.querySelectorAll('.info-close').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const target = btn.getAttribute('data-close');
+                    const modal = document.getElementById(target);
+                    if (modal) modal.classList.remove('active');
+                });
+            });
+            document.querySelectorAll('.info-modal').forEach((modal) => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) modal.classList.remove('active');
+                });
+            });
+        };
+
+        semanticBarIcon?.addEventListener('click', () => openModal('bar-info'));
+        semanticMatrixIcon?.addEventListener('click', () => openModal('matrix-info'));
+        wireModalClose();
+
+        const makeZoomable = (wrap) => {
+            if (!wrap) return;
+            const img = wrap.querySelector('.zoomable');
+            if (!img) return;
+            let scale = 1;
+            const apply = () => {
+                img.style.transformOrigin = 'top left';
+                img.style.transform = `scale(${scale})`;
+                img.style.width = `${scale * 100}%`;
+            };
+            apply();
+            wrap.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const delta = e.deltaY < 0 ? 0.1 : -0.1;
+                scale = Math.min(3, Math.max(0.5, scale + delta));
+                apply();
+            }, { passive: false });
+            img.addEventListener('dblclick', () => {
+                scale = 1;
+                apply();
+            });
+        };
+
+        makeZoomable(document.querySelector('#bar-info .zoom-wrap'));
+        makeZoomable(document.querySelector('#matrix-info .zoom-wrap'));
+        
+        // 简单的滑块数值联动逻辑（为了演示UI效果）
+        const slider = document.getElementById('linkThreshold');
+        const valDisplay = document.getElementById('thresholdValue');
+        if(slider && valDisplay) {
+            slider.addEventListener('input', (e) => valDisplay.textContent = e.target.value);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,34 @@
+# 依赖目录（不要上传）
+node_modules/
+
+# 打包 / 构建产物（一般不传）
+dist/
+
+# 各种缓存
+.cache/
+__pycache__/
+*.py[cod]
+*.pyo
+
+# 日志文件
+*.log
+
+# 环境变量（如果以后有的话）
+.env
+.env.*
+
+# 编辑器配置
+.vscode/
+.idea/
+*.swp
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+src/data/captions_train2017.json
+src/data/captions_val2017.json
+src/data/instances_train2017.json
+src/data/instances_val2017.json
+src/data/person_keypoints_train2017.json
+src/data/person_keypoints_val2017.json
