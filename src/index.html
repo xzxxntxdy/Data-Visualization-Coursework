@@ -639,8 +639,17 @@
             </section>
 
             <section class="view" id="spatial-view">
-                <section class="panel placeholder">
-                    <div class="placeholder-text">空间 / 尺度视图开发中</div>
+                <section class="panel spatial-panel" style="height:100%;">
+                    <div class="panel-head">
+                        <div>
+                            <h1>空间与尺度分析</h1>
+                            <p>探索物体在图像中的位置分布与尺度特征</p>
+                        </div>
+                        <div class="head-actions">
+                            <div class="tag">Spatial Analysis</div>
+                        </div>
+                    </div>
+                    <div id="spatial-content" style="flex:1; min-height:0; overflow:hidden;"></div>
                 </section>
             </section>
 
@@ -676,6 +685,7 @@
     </div>
 
     <script type="module" src="./js/semantic_graph.js"></script>
+    <script type="module" src="./js/spatial_view.js"></script>
     <script>
         const navButtons = Array.from(document.querySelectorAll('.nav-item'));
         const views = Array.from(document.querySelectorAll('.view'));
