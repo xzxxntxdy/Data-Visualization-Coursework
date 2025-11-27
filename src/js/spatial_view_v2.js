@@ -1,4 +1,4 @@
-// src/js/spatial_view.js
+// src/js/spatial_view_v2.js
 // 空间与尺度分析视图 - COCO-Verse v2.0 专业重构版
 // 解决：视觉层级 / 配色统一 / 响应式 / 交互联动 / 叙事链
 
