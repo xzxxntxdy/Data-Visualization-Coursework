@@ -71,17 +71,59 @@ const DESIGN = {
 // ═══════════════════════════════════════════════════════════════════
 const state = {
     currentCategory: "all",
-    selectedRegion: null,      // 空间框选区域
+    selectedRegion: null,      // 空间框选区域 {x0, x1, y0, y1}
+    selectedScaleRange: null,  // 尺度框选范围 {min, max}
     hoveredCategory: null,     // hover 的类别
+    clickedCategory: null,     // 点击选中的类别
     isInitialized: false,
 };
 
 // 图表更新函数
 const charts = {
     contour: { update: () => {}, resize: () => {} },
-    distribution: { update: () => {}, resize: () => {} },
     scatter: { update: () => {}, resize: () => {} },
+    distribution: { update: () => {}, resize: () => {} },
 };
+
+// 获取当前过滤后的数据（用于联动）
+function getFilteredData() {
+    let data = spatialData.annotations;
+    
+    // 1. 类别过滤
+    if (state.currentCategory !== "all") {
+        data = data.filter(d => d.category === state.currentCategory);
+    }
+    
+    // 2. 空间区域过滤
+    if (state.selectedRegion) {
+        const r = state.selectedRegion;
+        data = data.filter(d =>
+            d.cx >= r.x0 && d.cx <= r.x1 &&
+            d.cy >= r.y0 && d.cy <= r.y1
+        );
+    }
+    
+    // 3. 点击类别过滤
+    if (state.clickedCategory) {
+        data = data.filter(d => d.category === state.clickedCategory);
+    }
+    
+    return data;
+}
+
+// 计算过滤后数据的尺度分布
+function computeFilteredScaleDistribution(data) {
+    const scales = { small: 0, medium: 0, large: 0 };
+    data.forEach(d => scales[d.scale]++);
+    const total = data.length;
+    return {
+        small: total > 0 ? scales.small / total : 0,
+        medium: total > 0 ? scales.medium / total : 0,
+        large: total > 0 ? scales.large / total : 0,
+        counts: scales,
+        total
+    };
+}
 
 // ResizeObserver 实例
 let resizeObserver = null;
@@ -181,6 +223,7 @@ function render() {
     injectStyles();
     
     // 构建布局 - 主图优先，洞察轻量化
+    // 布局顺序：空间热力图 → 位置×尺度 → 类别分布（叙事逻辑：空间→尺度→类别）
     container.innerHTML = `
         <div class="sv2-root">
             <!-- 顶部轻量信息栏 -->
@@ -209,7 +252,7 @@ function render() {
                 </div>
             </div>
             
-            <!-- 主内容区 - 三栏叙事布局 -->
+            <!-- 主内容区 - 三栏叙事布局：空间→尺度→类别 -->
             <div class="sv2-main">
                 <!-- 左：空间密度主图 -->
                 <div class="sv2-panel sv2-panel-primary">
@@ -218,25 +261,59 @@ function render() {
                             <span class="sv2-panel-number">01</span>
                             空间分布热力图
                         </div>
-                        <select id="sv2-category-select" class="sv2-select">
-                            <option value="all">全部类别</option>
-                        </select>
+                        <div class="sv2-category-picker" id="sv2-category-picker">
+                            <button class="sv2-picker-btn" id="sv2-picker-btn">
+                                <span id="sv2-picker-label">全部类别 (80)</span>
+                                <span class="sv2-picker-arrow">▼</span>
+                            </button>
+                            <div class="sv2-picker-dropdown" id="sv2-picker-dropdown">
+                                <div class="sv2-picker-search">
+                                    <input type="text" id="sv2-category-search" placeholder="搜索类别..." />
+                                </div>
+                                <div class="sv2-picker-section">
+                                    <div class="sv2-picker-section-title">📌 常用类别</div>
+                                    <div class="sv2-picker-chips" id="sv2-quick-cats"></div>
+                                </div>
+                                <div class="sv2-picker-section">
+                                    <div class="sv2-picker-section-title">📁 全部类别 (${spatialData.categories.length})</div>
+                                    <div class="sv2-picker-list" id="sv2-all-cats"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="sv2-panel-body">
                         <div id="sv2-contour" class="sv2-chart sv2-chart-main"></div>
                     </div>
                     <div class="sv2-panel-footer">
                         <span class="sv2-hint">🖱️ 拖拽框选区域，联动右侧图表</span>
+                        <span class="sv2-hint sv2-region-info" id="sv2-region-info"></span>
                     </div>
                 </div>
                 
-                <!-- 中：尺度分布 -->
+                <!-- 中：位置×尺度散点图（空间→尺度的自然过渡） -->
                 <div class="sv2-panel sv2-panel-secondary">
                     <div class="sv2-panel-header">
                         <div class="sv2-panel-title">
                             <span class="sv2-panel-number">02</span>
+                            位置 × 尺度
+                        </div>
+                    </div>
+                    <div class="sv2-panel-body">
+                        <div id="sv2-scatter" class="sv2-chart"></div>
+                    </div>
+                    <div class="sv2-panel-footer">
+                        <span class="sv2-hint" id="sv2-scatter-info">显示全部 ${insights.total} 个目标</span>
+                    </div>
+                </div>
+                
+                <!-- 右：类别尺度分布（衍生统计） -->
+                <div class="sv2-panel sv2-panel-tertiary">
+                    <div class="sv2-panel-header">
+                        <div class="sv2-panel-title">
+                            <span class="sv2-panel-number">03</span>
                             类别尺度分布
                         </div>
+                        <span class="sv2-filter-badge" id="sv2-filter-badge" style="display:none">已筛选</span>
                     </div>
                     <div class="sv2-panel-body">
                         <div id="sv2-distribution" class="sv2-chart"></div>
@@ -249,22 +326,6 @@ function render() {
                         </div>
                     </div>
                 </div>
-                
-                <!-- 右：位置×尺度 -->
-                <div class="sv2-panel sv2-panel-tertiary">
-                    <div class="sv2-panel-header">
-                        <div class="sv2-panel-title">
-                            <span class="sv2-panel-number">03</span>
-                            位置 × 尺度
-                        </div>
-                    </div>
-                    <div class="sv2-panel-body">
-                        <div id="sv2-scatter" class="sv2-chart"></div>
-                    </div>
-                    <div class="sv2-panel-footer">
-                        <span class="sv2-hint" id="sv2-scatter-info">显示全部 ${insights.total} 个目标</span>
-                    </div>
-                </div>
             </div>
             
             <!-- Tooltip 容器 -->
@@ -273,13 +334,13 @@ function render() {
     `;
     
     // 填充类别选择器
-    populateCategorySelect();
+    setupCategoryPicker();
     
     // 延迟渲染图表
     requestAnimationFrame(() => {
         renderContourChart();
-        renderDistributionChart();
         renderScatterChart();
+        renderDistributionChart();
     });
 }
 
@@ -447,19 +508,140 @@ function injectStyles() {
             color: ${C.text.muted};
         }
         
-        /* 下拉选择器 */
-        .sv2-select {
-            padding: 4px 8px;
+        /* 下拉选择器 - 改为高级Picker */
+        .sv2-category-picker {
+            position: relative;
+        }
+        .sv2-picker-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 10px;
             font-size: 11px;
             border: 1px solid ${C.border};
             border-radius: ${R.sm}px;
             background: ${C.bg.card};
             color: ${C.text.secondary};
             cursor: pointer;
+            transition: all 0.2s;
         }
-        .sv2-select:focus {
-            outline: none;
+        .sv2-picker-btn:hover {
             border-color: ${C.primary};
+            background: ${C.bg.subtle};
+        }
+        .sv2-picker-arrow {
+            font-size: 8px;
+            opacity: 0.6;
+        }
+        .sv2-picker-dropdown {
+            position: absolute;
+            top: calc(100% + 4px);
+            right: 0;
+            width: 280px;
+            max-height: 380px;
+            background: ${C.bg.card};
+            border: 1px solid ${C.border};
+            border-radius: ${R.md}px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            z-index: 100;
+            display: none;
+            overflow: hidden;
+        }
+        .sv2-picker-dropdown.open {
+            display: block;
+        }
+        .sv2-picker-search {
+            padding: ${S.sm}px;
+            border-bottom: 1px solid ${C.border};
+        }
+        .sv2-picker-search input {
+            width: 100%;
+            padding: 6px 10px;
+            font-size: 12px;
+            border: 1px solid ${C.border};
+            border-radius: ${R.sm}px;
+            outline: none;
+        }
+        .sv2-picker-search input:focus {
+            border-color: ${C.primary};
+        }
+        .sv2-picker-section {
+            padding: ${S.sm}px;
+        }
+        .sv2-picker-section-title {
+            font-size: 10px;
+            font-weight: 600;
+            color: ${C.text.muted};
+            margin-bottom: ${S.sm}px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .sv2-picker-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .sv2-picker-chip {
+            padding: 4px 10px;
+            font-size: 11px;
+            background: ${C.bg.subtle};
+            border: 1px solid ${C.border};
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .sv2-picker-chip:hover {
+            background: ${C.primaryLight};
+            border-color: ${C.primary};
+            color: ${C.primaryDark};
+        }
+        .sv2-picker-chip.active {
+            background: ${C.primary};
+            border-color: ${C.primary};
+            color: white;
+        }
+        .sv2-picker-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .sv2-picker-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 8px;
+            font-size: 11px;
+            cursor: pointer;
+            border-radius: ${R.sm}px;
+            transition: background 0.1s;
+        }
+        .sv2-picker-item:hover {
+            background: ${C.bg.subtle};
+        }
+        .sv2-picker-item.active {
+            background: ${C.primaryLight};
+            color: ${C.primaryDark};
+            font-weight: 500;
+        }
+        .sv2-picker-item.hidden {
+            display: none;
+        }
+        .sv2-picker-item-count {
+            color: ${C.text.muted};
+            font-size: 10px;
+        }
+        
+        /* 筛选标记 */
+        .sv2-filter-badge {
+            padding: 2px 8px;
+            font-size: 9px;
+            background: ${C.primary};
+            color: white;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+        .sv2-region-info {
+            margin-left: auto;
+            color: ${C.primary};
+            font-weight: 500;
         }
         
         /* 图例 */
@@ -565,35 +747,116 @@ function injectStyles() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 📊 类别选择器
+// 📊 类别选择器 - 完整80类支持
 // ═══════════════════════════════════════════════════════════════════
-function populateCategorySelect() {
-    const select = document.getElementById("sv2-category-select");
-    if (!select) return;
+function setupCategoryPicker() {
+    const btn = document.getElementById("sv2-picker-btn");
+    const dropdown = document.getElementById("sv2-picker-dropdown");
+    const label = document.getElementById("sv2-picker-label");
+    const searchInput = document.getElementById("sv2-category-search");
+    const quickCats = document.getElementById("sv2-quick-cats");
+    const allCats = document.getElementById("sv2-all-cats");
     
-    spatialData.categories.slice(0, 20).forEach(cat => {
-        const opt = document.createElement("option");
-        opt.value = cat.name;
-        opt.textContent = `${cat.name} (${cat.count.toLocaleString()})`;
-        select.appendChild(opt);
+    if (!btn || !dropdown) return;
+    
+    const categories = spatialData.categories;
+    const topCategories = categories.slice(0, 6); // 前6个作为常用
+    
+    // 填充常用类别 Chips
+    quickCats.innerHTML = `
+        <span class="sv2-picker-chip ${state.currentCategory === 'all' ? 'active' : ''}" data-value="all">全部</span>
+        ${topCategories.map(cat => `
+            <span class="sv2-picker-chip ${state.currentCategory === cat.name ? 'active' : ''}" 
+                  data-value="${cat.name}">${cat.name}</span>
+        `).join('')}
+    `;
+    
+    // 填充全部类别列表
+    allCats.innerHTML = categories.map(cat => `
+        <div class="sv2-picker-item ${state.currentCategory === cat.name ? 'active' : ''}" 
+             data-value="${cat.name}" data-search="${cat.name.toLowerCase()}">
+            <span>${cat.name}</span>
+            <span class="sv2-picker-item-count">${cat.count.toLocaleString()}</span>
+        </div>
+    `).join('');
+    
+    // 切换下拉菜单
+    btn.addEventListener("click", e => {
+        e.stopPropagation();
+        dropdown.classList.toggle("open");
+        if (dropdown.classList.contains("open")) {
+            searchInput.focus();
+        }
     });
     
-    select.addEventListener("change", e => {
-        state.currentCategory = e.target.value;
+    // 点击外部关闭
+    document.addEventListener("click", e => {
+        if (!dropdown.contains(e.target) && e.target !== btn) {
+            dropdown.classList.remove("open");
+        }
+    });
+    
+    // 搜索过滤
+    searchInput.addEventListener("input", e => {
+        const query = e.target.value.toLowerCase().trim();
+        allCats.querySelectorAll(".sv2-picker-item").forEach(item => {
+            const match = item.dataset.search.includes(query);
+            item.classList.toggle("hidden", !match);
+        });
+    });
+    
+    // 选择类别 - Chips
+    quickCats.addEventListener("click", e => {
+        if (e.target.classList.contains("sv2-picker-chip")) {
+            selectCategory(e.target.dataset.value);
+            dropdown.classList.remove("open");
+        }
+    });
+    
+    // 选择类别 - 列表
+    allCats.addEventListener("click", e => {
+        const item = e.target.closest(".sv2-picker-item");
+        if (item) {
+            selectCategory(item.dataset.value);
+            dropdown.classList.remove("open");
+        }
+    });
+    
+    function selectCategory(value) {
+        state.currentCategory = value;
+        
+        // 更新按钮文本
+        if (value === "all") {
+            label.textContent = `全部类别 (${categories.length})`;
+        } else {
+            const cat = categories.find(c => c.name === value);
+            label.textContent = `${value} (${cat?.count.toLocaleString() || 0})`;
+        }
+        
+        // 更新激活状态
+        quickCats.querySelectorAll(".sv2-picker-chip").forEach(chip => {
+            chip.classList.toggle("active", chip.dataset.value === value);
+        });
+        allCats.querySelectorAll(".sv2-picker-item").forEach(item => {
+            item.classList.toggle("active", item.dataset.value === value);
+        });
+        
+        // 触发图表更新
         charts.contour.update();
         charts.scatter.update();
-    });
+        charts.distribution.update();
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 📊 等高线密度图
+// 📊 等高线密度图 - 支持类别高亮
 // ═══════════════════════════════════════════════════════════════════
 function renderContourChart() {
     const container = document.getElementById("sv2-contour");
     if (!container) return;
     
     const C = DESIGN.colors;
-    let svg, g, contourLayer, xScale, yScale, innerW, innerH;
+    let svg, g, contourLayer, pointsLayer, xScale, yScale, innerW, innerH, brushG;
     
     function setup() {
         const rect = container.getBoundingClientRect();
@@ -641,12 +904,15 @@ function renderContourChart() {
         // 等高线层
         contourLayer = g.append("g").attr("class", "sv2-contours");
         
+        // 点层（用于高亮特定类别）
+        pointsLayer = g.append("g").attr("class", "sv2-highlight-points");
+        
         // Brush
         const brush = d3.brush()
             .extent([[0, 0], [innerW, innerH]])
             .on("brush end", brushHandler);
         
-        g.append("g").attr("class", "sv2-brush").call(brush);
+        brushG = g.append("g").attr("class", "sv2-brush").call(brush);
         
         // 坐标轴标签
         g.append("text")
@@ -666,16 +932,31 @@ function renderContourChart() {
     }
     
     function brushHandler(event) {
+        const regionInfo = document.getElementById("sv2-region-info");
+        const filterBadge = document.getElementById("sv2-filter-badge");
+        
         if (!event.selection) {
             state.selectedRegion = null;
+            if (regionInfo) regionInfo.textContent = "";
+            if (filterBadge) filterBadge.style.display = "none";
         } else {
             const [[x0, y0], [x1, y1]] = event.selection;
             state.selectedRegion = {
                 x0: xScale.invert(x0), x1: xScale.invert(x1),
                 y0: yScale.invert(y0), y1: yScale.invert(y1),
             };
+            
+            // 计算选中区域的数据量
+            const filtered = getFilteredData();
+            if (regionInfo) {
+                regionInfo.textContent = `已选中 ${filtered.length} 个目标`;
+            }
+            if (filterBadge) filterBadge.style.display = "inline";
         }
+        
+        // 联动更新：散点图 + 类别分布图
         charts.scatter.update();
+        charts.distribution.update();
     }
     
     function update() {
@@ -700,6 +981,9 @@ function renderContourChart() {
             .domain([0, maxVal])
             .interpolator(t => d3.interpolateBlues(0.2 + t * 0.8));
         
+        // 如果有点击的类别，等高线变淡
+        const contourOpacity = state.clickedCategory ? 0.4 : 0.85;
+        
         contourLayer.selectAll("path")
             .data(contours)
             .join("path")
@@ -707,7 +991,43 @@ function renderContourChart() {
             .attr("fill", d => colorScale(d.value))
             .attr("stroke", d => d3.color(colorScale(d.value))?.darker(0.3))
             .attr("stroke-width", 0.5)
-            .attr("fill-opacity", 0.85);
+            .transition().duration(200)
+            .attr("fill-opacity", contourOpacity);
+        
+        // 如果有点击的类别，在等高线上叠加该类别的点
+        if (state.clickedCategory) {
+            const catData = data.filter(d => d.category === state.clickedCategory);
+            const sampleRate = Math.max(1, Math.floor(catData.length / 300));
+            const sampledCat = catData.filter((_, i) => i % sampleRate === 0);
+            
+            const scaleColor = d => {
+                if (d.scale === "small") return C.scale.small;
+                if (d.scale === "medium") return C.scale.medium;
+                return C.scale.large;
+            };
+            
+            pointsLayer.selectAll("circle")
+                .data(sampledCat, d => d.id)
+                .join(
+                    enter => enter.append("circle")
+                        .attr("r", 0)
+                        .attr("cx", d => xScale(d.cx))
+                        .attr("cy", d => yScale(d.cy))
+                        .attr("fill", scaleColor)
+                        .attr("stroke", "white")
+                        .attr("stroke-width", 0.8)
+                        .call(enter => enter.transition().duration(200)
+                            .attr("r", 4)
+                            .attr("opacity", 0.85)),
+                    update => update,
+                    exit => exit.transition().duration(100).attr("r", 0).remove()
+                );
+        } else {
+            pointsLayer.selectAll("circle")
+                .transition().duration(100)
+                .attr("r", 0)
+                .remove();
+        }
     }
     
     setup();
@@ -720,7 +1040,7 @@ function renderContourChart() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 📊 类别尺度分布图 (水平堆叠条形图)
+// 📊 类别尺度分布图 (水平堆叠条形图) - 支持联动
 // ═══════════════════════════════════════════════════════════════════
 function renderDistributionChart() {
     const container = document.getElementById("sv2-distribution");
@@ -731,7 +1051,7 @@ function renderDistributionChart() {
     
     function render() {
         const rect = container.getBoundingClientRect();
-        const margin = { top: 10, right: 10, bottom: 25, left: 65 };
+        const margin = { top: 10, right: 10, bottom: 25, left: 70 };
         const width = rect.width || 300;
         const height = rect.height || 280;
         const innerW = width - margin.left - margin.right;
@@ -739,16 +1059,53 @@ function renderDistributionChart() {
         
         container.innerHTML = "";
         
-        const topCats = spatialData.categories.slice(0, 10);
-        const stackData = topCats.map(cat => {
-            const d = cat.scale_distribution;
-            const total = d.small + d.medium + d.large;
+        // 根据是否有空间筛选，计算不同的数据
+        const hasFilter = !!state.selectedRegion;
+        const filteredData = getFilteredData();
+        
+        // 按类别聚合筛选后的数据
+        const catStats = {};
+        filteredData.forEach(d => {
+            if (!catStats[d.category]) {
+                catStats[d.category] = { small: 0, medium: 0, large: 0 };
+            }
+            catStats[d.category][d.scale]++;
+        });
+        
+        // 如果有筛选，按筛选后的数量排序；否则用原始Top10
+        let displayCats;
+        if (hasFilter) {
+            displayCats = Object.entries(catStats)
+                .map(([name, counts]) => ({
+                    name,
+                    ...counts,
+                    total: counts.small + counts.medium + counts.large
+                }))
+                .filter(d => d.total > 0)
+                .sort((a, b) => b.total - a.total)
+                .slice(0, 10);
+        } else {
+            displayCats = spatialData.categories.slice(0, 10).map(cat => {
+                const d = cat.scale_distribution;
+                return {
+                    name: cat.name,
+                    small: d.small,
+                    medium: d.medium,
+                    large: d.large,
+                    total: d.small + d.medium + d.large
+                };
+            });
+        }
+        
+        // 转换为比例
+        const stackData = displayCats.map(cat => {
+            const total = cat.total;
             return {
                 name: cat.name,
-                small: d.small / total,
-                medium: d.medium / total,
-                large: d.large / total,
-                counts: d,
+                small: total > 0 ? cat.small / total : 0,
+                medium: total > 0 ? cat.medium / total : 0,
+                large: total > 0 ? cat.large / total : 0,
+                counts: { small: cat.small, medium: cat.medium, large: cat.large },
                 total,
             };
         });
@@ -760,6 +1117,18 @@ function renderDistributionChart() {
         
         const g = svg.append("g")
             .attr("transform", `translate(${margin.left},${margin.top})`);
+        
+        // 如果没有数据，显示提示
+        if (stackData.length === 0) {
+            g.append("text")
+                .attr("x", innerW / 2)
+                .attr("y", innerH / 2)
+                .attr("text-anchor", "middle")
+                .attr("font-size", 12)
+                .attr("fill", C.text.muted)
+                .text("选中区域无数据");
+            return;
+        }
         
         const yScale = d3.scaleBand()
             .domain(stackData.map(d => d.name))
@@ -780,7 +1149,7 @@ function renderDistributionChart() {
         };
         
         // 绘制堆叠条形
-        g.selectAll("g.layer")
+        const bars = g.selectAll("g.layer")
             .data(series)
             .join("g")
             .attr("class", "layer")
@@ -790,9 +1159,17 @@ function renderDistributionChart() {
             .join("rect")
             .attr("y", d => yScale(d.data.name))
             .attr("x", d => xScale(d[0]))
-            .attr("width", d => xScale(d[1]) - xScale(d[0]))
+            .attr("width", d => Math.max(0, xScale(d[1]) - xScale(d[0])))
             .attr("height", yScale.bandwidth())
             .attr("rx", 2)
+            .attr("opacity", d => {
+                // 如果有点击的类别，非选中的变淡
+                if (state.clickedCategory && d.data.name !== state.clickedCategory) {
+                    return 0.3;
+                }
+                return 1;
+            })
+            .style("cursor", "pointer")
             .on("mouseenter", function(event, d) {
                 const count = d.data.counts[d.key];
                 const pct = (d[1] - d[0]) * 100;
@@ -802,6 +1179,11 @@ function renderDistributionChart() {
                         <span>${d.key === 'small' ? '小' : d.key === 'medium' ? '中' : '大'}目标</span>
                         <span class="sv2-tooltip-value">${count} (${pct.toFixed(1)}%)</span>
                     </div>
+                    <div class="sv2-tooltip-row">
+                        <span>总计</span>
+                        <span class="sv2-tooltip-value">${d.data.total}</span>
+                    </div>
+                    ${hasFilter ? '<div style="margin-top:4px;font-size:9px;opacity:0.7">* 仅统计选中区域</div>' : ''}
                 `;
                 tooltip.style.left = event.pageX + 10 + "px";
                 tooltip.style.top = event.pageY - 10 + "px";
@@ -809,13 +1191,40 @@ function renderDistributionChart() {
             })
             .on("mouseleave", () => {
                 tooltip.classList.remove("visible");
+            })
+            .on("click", function(event, d) {
+                event.stopPropagation();
+                // 点击类别 → 联动高亮
+                if (state.clickedCategory === d.data.name) {
+                    state.clickedCategory = null; // 取消选中
+                } else {
+                    state.clickedCategory = d.data.name;
+                }
+                // 联动更新
+                charts.contour.update();
+                charts.scatter.update();
+                charts.distribution.update();
             });
         
-        // Y轴
-        g.append("g")
-            .call(d3.axisLeft(yScale).tickSize(0))
-            .selectAll("text")
-            .attr("font-size", 10);
+        // Y轴 - 类别名称可点击
+        const yAxis = g.append("g")
+            .call(d3.axisLeft(yScale).tickSize(0));
+        
+        yAxis.selectAll("text")
+            .attr("font-size", 10)
+            .style("cursor", "pointer")
+            .attr("fill", d => state.clickedCategory === d ? C.primary : C.text.primary)
+            .attr("font-weight", d => state.clickedCategory === d ? 600 : 400)
+            .on("click", function(event, catName) {
+                if (state.clickedCategory === catName) {
+                    state.clickedCategory = null;
+                } else {
+                    state.clickedCategory = catName;
+                }
+                charts.contour.update();
+                charts.scatter.update();
+                charts.distribution.update();
+            });
         
         g.selectAll(".domain").remove();
         
@@ -825,6 +1234,17 @@ function renderDistributionChart() {
             .call(d3.axisBottom(xScale).ticks(4, "%"))
             .selectAll("text")
             .attr("font-size", 9);
+        
+        // 显示筛选状态提示
+        if (hasFilter) {
+            g.append("text")
+                .attr("x", innerW)
+                .attr("y", -2)
+                .attr("text-anchor", "end")
+                .attr("font-size", 9)
+                .attr("fill", C.primary)
+                .text("📍 仅显示选中区域");
+        }
     }
     
     render();
@@ -832,7 +1252,7 @@ function renderDistributionChart() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 📊 位置×尺度散点图
+// 📊 位置×尺度散点图 - 支持完整联动
 // ═══════════════════════════════════════════════════════════════════
 function renderScatterChart() {
     const container = document.getElementById("sv2-scatter");
@@ -840,15 +1260,15 @@ function renderScatterChart() {
     
     const C = DESIGN.colors;
     const infoEl = document.getElementById("sv2-scatter-info");
-    let svg, g, bgLayer, fgLayer, xScale, yScale;
+    let svg, g, bgLayer, fgLayer, xScale, yScale, innerW, innerH;
     
     function setup() {
         const rect = container.getBoundingClientRect();
-        const margin = { top: 10, right: 10, bottom: 30, left: 40 };
+        const margin = { top: 10, right: 10, bottom: 30, left: 45 };
         const width = rect.width || 300;
         const height = rect.height || 200;
-        const innerW = width - margin.left - margin.right;
-        const innerH = height - margin.top - margin.bottom;
+        innerW = width - margin.left - margin.right;
+        innerH = height - margin.top - margin.bottom;
         
         container.innerHTML = "";
         
@@ -884,28 +1304,45 @@ function renderScatterChart() {
         
         // Y轴
         g.append("g")
-            .call(d3.axisLeft(yScale).ticks(3, ".0e"))
+            .call(d3.axisLeft(yScale).ticks(4, ".0e"))
             .selectAll("text").attr("font-size", 8);
+        
+        g.append("text")
+            .attr("transform", `translate(-35, ${innerH / 2}) rotate(-90)`)
+            .attr("text-anchor", "middle")
+            .attr("font-size", 9)
+            .attr("fill", C.text.muted)
+            .text("相对面积");
     }
     
     function update() {
-        const allData = state.currentCategory === "all"
+        // 基础数据（类别过滤）
+        let baseData = state.currentCategory === "all"
             ? spatialData.annotations
             : spatialData.annotations.filter(d => d.category === state.currentCategory);
         
-        // 框选区域内的数据
+        // 空间区域过滤
         let highlightData = [];
         if (state.selectedRegion) {
             const r = state.selectedRegion;
-            highlightData = allData.filter(d =>
+            highlightData = baseData.filter(d =>
                 d.cx >= r.x0 && d.cx <= r.x1 &&
                 d.cy >= r.y0 && d.cy <= r.y1
             );
         }
         
+        // 类别点击过滤
+        if (state.clickedCategory) {
+            if (highlightData.length > 0) {
+                highlightData = highlightData.filter(d => d.category === state.clickedCategory);
+            } else {
+                highlightData = baseData.filter(d => d.category === state.clickedCategory);
+            }
+        }
+        
         // 采样背景
-        const sampleRate = Math.max(1, Math.floor(allData.length / 600));
-        const bgData = allData.filter((_, i) => i % sampleRate === 0);
+        const sampleRate = Math.max(1, Math.floor(baseData.length / 600));
+        const bgData = baseData.filter((_, i) => i % sampleRate === 0);
         
         const scaleColor = d => {
             if (d.scale === "small") return C.scale.small;
@@ -921,39 +1358,46 @@ function renderScatterChart() {
             .attr("cx", d => xScale(d.cx))
             .attr("cy", d => yScale(Math.max(d.area, 1e-7)))
             .attr("fill", "#cbd5e1")
-            .attr("opacity", 0.25);
+            .attr("opacity", 0.2);
         
         // 前景点
-        const fgData = highlightData.length > 0 
-            ? highlightData.slice(0, 400)
-            : bgData.slice(0, 200);
+        const hasSelection = state.selectedRegion || state.clickedCategory;
+        const fgData = hasSelection
+            ? highlightData.slice(0, 500)
+            : bgData.slice(0, 300);
         
         fgLayer.selectAll("circle")
             .data(fgData, d => d.id)
             .join(
                 enter => enter.append("circle")
-                    .attr("r", highlightData.length > 0 ? 3.5 : 2.5)
+                    .attr("r", hasSelection ? 3.5 : 2.5)
                     .attr("cx", d => xScale(d.cx))
                     .attr("cy", d => yScale(Math.max(d.area, 1e-7)))
                     .attr("fill", scaleColor)
-                    .attr("opacity", highlightData.length > 0 ? 0.9 : 0.6)
-                    .attr("stroke", highlightData.length > 0 ? "white" : "none")
+                    .attr("opacity", hasSelection ? 0.9 : 0.6)
+                    .attr("stroke", hasSelection ? "white" : "none")
                     .attr("stroke-width", 0.8),
                 update => update
-                    .transition().duration(150)
-                    .attr("r", highlightData.length > 0 ? 3.5 : 2.5)
+                    .transition().duration(200)
+                    .attr("r", hasSelection ? 3.5 : 2.5)
                     .attr("cx", d => xScale(d.cx))
                     .attr("cy", d => yScale(Math.max(d.area, 1e-7)))
                     .attr("fill", scaleColor)
-                    .attr("opacity", highlightData.length > 0 ? 0.9 : 0.6),
-                exit => exit.remove()
+                    .attr("opacity", hasSelection ? 0.9 : 0.6)
+                    .attr("stroke", hasSelection ? "white" : "none"),
+                exit => exit.transition().duration(100).attr("opacity", 0).remove()
             );
         
         // 更新信息
         if (infoEl) {
-            infoEl.textContent = highlightData.length > 0
-                ? `已选中 ${highlightData.length} 个目标`
-                : `显示 ${allData.length} 个目标`;
+            if (hasSelection) {
+                const source = [];
+                if (state.selectedRegion) source.push("区域选择");
+                if (state.clickedCategory) source.push(state.clickedCategory);
+                infoEl.textContent = `已选中 ${highlightData.length} 个 (${source.join(" + ")})`;
+            } else {
+                infoEl.textContent = `显示 ${baseData.length} 个目标`;
+            }
         }
     }
     
