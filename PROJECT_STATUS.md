@@ -89,20 +89,21 @@ npm start
 Data-Visualization-Coursework/
 ├── package.json
 ├── process_semantic.py      # 语义数据处理
-├── process_spatial.py       # 空间数据处理 ✅ 新增
-├── process_pose.py          # 姿态数据处理 ⏳ 待开发
+├── process_spatial.py       # 空间数据处理 
+├── process_pose.py          # 姿态数据处理 ✅ 新增
 ├── src/
 │   ├── index.html           # 主页面
 │   ├── data/
 │   │   ├── instances_train2017.json     # COCO 原始数据
 │   │   ├── person_keypoints_train2017.json
 │   │   ├── semantic_data.json           # 语义共现数据
-│   │   └── spatial_data.json            # 空间尺度数据 ✅ 新增
+│   │   └── spatial_data.json            # 空间尺度数据 
+│   │   └── pose_stats.json              # 姿态数据 ✅ 新增
 │   ├── icon/                # 静态图片资源
 │   └── js/
 │       ├── semantic_graph.js     # 语义视图
-│       ├── spatial_view.js       # 空间视图 ✅ 新增
-│       └── pose_view.js          # 姿态视图 ⏳ 待开发
+│       ├── spatial_view.js       # 空间视图 
+│       └── pose_view.js          # 姿态视图 ✅ 新增
 ```
 
 ---
@@ -134,3 +135,11 @@ Data-Visualization-Coursework/
 - ✅ 实现尺寸-宽高比散点图 + Brush 选择
 - ✅ 实现类别尺度分布堆叠条形图
 - ✅ 集成到主页面
+
+## 2025-11-29
+- ✅ 新增 `process_pose.py` 姿势数据处理脚本
+- ✅ 新增 `pose_view.js` 姿势视图模块
+- ✅ 实现骨架分布图
+- ✅ 实现环形图 + 节点 选择
+- ✅ 集成到主页面
+
