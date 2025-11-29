@@ -653,11 +653,23 @@
                 </section>
             </section>
 
+            
             <section class="view" id="pose-view">
-                <section class="panel placeholder">
-                    <div class="placeholder-text">姿态 / 骨架视图开发中</div>
+                <section class="panel spatial-panel" style="height:100%;">
+                    <div class="panel-head">
+                        <div>
+                            <h1>姿态 / 骨架视图</h1>
+                            <p>姿态/骨架相关的可视化</p>
+                        </div>
+                        <div class="head-actions">
+                            <div class="tag">Skeleton Graph</div>
+                        </div>
+                    </div>
+                    <div id="pose-content" style="flex:1; min-height:0; overflow:hidden;"></div>
                 </section>
             </section>
+
+
         </section>
     </main>
     
@@ -686,6 +698,7 @@
 
     <script type="module" src="./js/semantic_graph.js"></script>
     <script type="module" src="./js/spatial_view.js"></script>
+    <script type="module" src="./js/pose_view.js"></script>
     <script>
         const navButtons = Array.from(document.querySelectorAll('.nav-item'));
         const views = Array.from(document.querySelectorAll('.view'));
