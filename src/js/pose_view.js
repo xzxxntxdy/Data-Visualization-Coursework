@@ -1,5 +1,5 @@
 // src/js/simple_pose_view.js
-// 终极形态 Refined v8: 纯白背景 + 深色骨架 + 全局高亮鲜艳色 (Left & Right Vivid)
+// 姿态视图 
 
 import * as d3 from "d3";
 import poseData from "../data/pose_stats.json"; 
@@ -51,7 +51,9 @@ function getStylesHTML() {
     return `
         .sv2-root { 
             font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif; 
-            padding: 20px; 
+            /* 👇 [修改点] 调整布局空间：顶部减少到10px，底部增加到200px */
+            /* padding顺序: 上 右 下 左 */
+            padding: 10px 20px 200px 20px; 
             background: ${THEME.colors.bg}; 
             height: 100%; 
             box-sizing: border-box; 
@@ -60,6 +62,7 @@ function getStylesHTML() {
             gap: 20px; 
             justify-content: center;
             color: ${THEME.colors.text.main};
+            overflow-y: auto;
         }
         
         .sv2-card { 
@@ -204,13 +207,13 @@ function render() {
         <style>${getStylesHTML()}</style>
         <div class="sv2-root">
             <div class="sv2-card">
-                <div class="sv2-title">精准骨架拓扑分析</div>
+                <div class="sv2-title">骨架拓扑分析</div>
                 <div class="sv2-subtitle">深色骨架 · 高斯概率场 · 1σ/3σ边界</div>
                 <div id="view-skeleton" class="sv2-chart-area"></div>
             </div>
             <div class="sv2-card">
-                <div class="sv2-title">置信度全息雷达</div>
-                <div class="sv2-subtitle">关键点多维性能图谱 · 实时扫描</div>
+                <div class="sv2-title">可见性环形展示</div>
+                <div class="sv2-subtitle">各个关节点对比图</div>
                 <div id="view-radar" class="sv2-chart-area"></div>
             </div>
             <div id="tooltip" class="sv2-tooltip"></div>
@@ -311,9 +314,9 @@ function drawSkeletonLegend(svg, x, y) {
     vividAccent.s = 1.0; vividAccent.l = 0.45;
 
     const items = [
-        { type: "line", text: "骨架连接 (恒定深色)" },
-        { type: "circle", text: "关键点 (独立高亮色)" },
-        { type: "blob", text: "概率密度场 (高斯渐变)" },
+        { type: "line", text: "骨架连接 " },
+        { type: "circle", text: "关节点" },
+        { type: "blob", text: "概率密度场 " },
         { type: "boundary-inner", text: "1σ 核心边界 (68%)" },
         { type: "boundary-outer", text: "3σ 最大边界 (99.7%)" }
     ];
@@ -347,7 +350,7 @@ function drawSkeletonLegend(svg, x, y) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 🕸️ Visualization 2: Radar System (保持使用高亮色)
+// 🕸️ Visualization 2: Radar System (保持使用高亮色，修复交互)
 // ═══════════════════════════════════════════════════════════════════
 
 function renderRadarSystem(root, data, tooltip) {
@@ -383,19 +386,23 @@ function renderRadarSystem(root, data, tooltip) {
         .startAngle(d => angleScale(d.nameCN)).endAngle(d => angleScale(d.nameCN) + angleScale.bandwidth())
         .padAngle(0.03).padRadius(innerRadius);
 
+    // 👇 [修改点] 修复交互事件传递
     const slices = g.append("g").selectAll("path").data(sortedData).join("path")
         .attr("class", "radar-slice").attr("d", arc)
-        .attr("fill", d => d.colorVivid) // 使用高亮色
-        .on("mouseenter", (e, d) => triggerActive(d.id, e.target)).on("mouseleave", (e, d) => triggerInactive(e.target));
+        .attr("fill", d => d.colorVivid) 
+        .on("mouseenter", (e, d) => triggerActive(e, d.id, e.target)) // 传递事件对象 e
+        .on("mouseleave", (e, d) => triggerInactive(e.target));
 
+    // 👇 [修改点] 修复交互事件传递
     const beads = g.append("g").attr("class", "radar-beads").selectAll("circle").data(sortedData).join("circle")
         .attr("class", "radar-bead")
         .attr("cx", d => Math.cos(angleScale(d.nameCN) + angleScale.bandwidth() / 2 - Math.PI / 2) * rScale(d.vis))
         .attr("cy", d => Math.sin(angleScale(d.nameCN) + angleScale.bandwidth() / 2 - Math.PI / 2) * rScale(d.vis))
         .attr("r", 5)
-        .attr("fill", d => d.colorVivid) // 使用高亮色
+        .attr("fill", d => d.colorVivid) 
         .attr("stroke", "#fff").attr("stroke-width", 2) 
-        .on("mouseenter", (e, d) => triggerActive(d.id, e.target)).on("mouseleave", (e, d) => triggerInactive(e.target));
+        .on("mouseenter", (e, d) => triggerActive(e, d.id, e.target)) // 传递事件对象 e
+        .on("mouseleave", (e, d) => triggerInactive(e.target));
 
     g.append("g").selectAll("text").data(sortedData).join("text").attr("class", "radar-label").attr("text-anchor", "middle")
         .attr("transform", d => {
@@ -404,11 +411,14 @@ function renderRadarSystem(root, data, tooltip) {
             return `translate(${Math.cos(a)*r}, ${Math.sin(a)*r})`;
         })
         .text(d => d.nameCN)
-        .style("fill", d => d.colorVivid); // 使用高亮色
+        .style("fill", d => d.colorVivid); 
 
-    function triggerActive(id, target) {
+    // 👇 [修改点] 接收事件对象并正确传递给 showTooltip
+    function triggerActive(event, id, target) {
         EventBus.emit("active", id); handleFocus(id);
-        const d = sortedData.find(item => item.id === id); showTooltip(d3.event, d, tooltip, root);
+        const d = sortedData.find(item => item.id === id); 
+        // 使用传入的 event 对象，而不是废弃的 d3.event
+        showTooltip(event, d, tooltip, root); 
         d3.select(target).classed("focused", true);
     }
     function triggerInactive(target) {
@@ -429,7 +439,7 @@ function renderRadarSystem(root, data, tooltip) {
 function drawRadarLegend(svg, x, y) {
     const g = svg.append("g").attr("class", "legend-group").attr("transform", `translate(${x}, ${y})`);
     g.append("text").attr("class", "legend-title").text("图例 / LEGEND").attr("y", 0);
-    const items = [{ type: "slice", text: "可见性 (半径长度)" }, { type: "bead", text: "能量指示珠" }, { type: "grid", text: "置信度网格" }];
+    const items = [{ type: "slice", text: "各关节可见性 (半径长度)" },  { type: "grid", text: "辅助线方便比较" }];
     
     // 生成示范用的高亮色
     const vividAccent = d3.hsl(THEME.colors.text.accent);
