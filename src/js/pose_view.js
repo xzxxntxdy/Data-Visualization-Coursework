@@ -1,8 +1,29 @@
-// src/js/simple_pose_view.js
-// 姿态视图 
+// src/js/pose_view.js
+// 姿态视图 (优化版)
 
 import * as d3 from "d3";
 import poseData from "../data/pose_stats.json"; 
+
+// ═══════════════════════════════════════════════════════════════════
+// 🔧 Event Bus & Global State
+// ═══════════════════════════════════════════════════════════════════
+
+const EventBus = {
+    listeners: {},
+    on(event, callback) {
+        if (!this.listeners[event]) this.listeners[event] = [];
+        // check the callback exist or not
+        if (this.listeners[event].indexOf(callback) >= 0) {
+            return;
+        }
+        this.listeners[event].push(callback);
+    },
+    emit(event, data) {
+        if (this.listeners[event]) this.listeners[event].forEach(cb => cb(data));
+    }
+};
+
+let focusedKeypointId = null; // 模块级状态，用于跟踪当前聚焦的节点
 
 // ═══════════════════════════════════════════════════════════════════
 // 🌌 Design System (设计系统 - 明亮模式)
@@ -29,36 +50,20 @@ const THEME = Object.freeze({
 });
 
 // ═══════════════════════════════════════════════════════════════════
-// 🔧 Event Bus
-// ═══════════════════════════════════════════════════════════════════
-
-const EventBus = {
-    listeners: {},
-    on(event, callback) {
-        if (!this.listeners[event]) this.listeners[event] = [];
-        this.listeners[event].push(callback);
-    },
-    emit(event, data) {
-        if (this.listeners[event]) this.listeners[event].forEach(cb => cb(data));
-    }
-};
-
-// ═══════════════════════════════════════════════════════════════════
-// 🖌️ Styles (CSS)
+// ️ Styles (CSS)
 // ═══════════════════════════════════════════════════════════════════
 
 function getStylesHTML() {
     return `
         .sv2-root { 
             font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif; 
-            /* 👇 [修改点] 调整布局空间：顶部减少到10px，底部增加到200px */
-            /* padding顺序: 上 右 下 左 */
-            padding: 10px 20px 200px 20px; 
+            /* 优化布局：使用内边距和 gap 提供更灵活的间距 */
+            padding: 20px;
             background: ${THEME.colors.bg}; 
             height: 100%; 
             box-sizing: border-box; 
             display: flex; 
-            flex-wrap: wrap; 
+            flex-wrap: wrap;
             gap: 20px; 
             justify-content: center;
             color: ${THEME.colors.text.main};
@@ -111,6 +116,10 @@ function getStylesHTML() {
         .radar-grid-line { stroke: ${THEME.colors.grid}; stroke-dasharray: 4 2; pointer-events: none; }
 
         @keyframes scan-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .axis-label { font-size: 10px; fill: ${THEME.colors.text.sub}; }
+        .x-axis .tick line, .y-axis .tick line { stroke: ${THEME.colors.grid}; }
+        .x-axis path, .y-axis path { stroke: ${THEME.colors.text.sub}; }
+
         .radar-scanner { 
             transform-origin: center; 
             animation: scan-rotate 8s linear infinite; 
@@ -168,15 +177,16 @@ function processData() {
         
         // 生成 Vivid (高亮鲜艳) 颜色：S=1.0, L=0.45
         const hsl = d3.hsl(baseColor);
-        hsl.s = 1.0; 
-        hsl.l = 0.45; 
+        hsl.s = 1.0; // 饱和度最大化，确保鲜艳
+        hsl.l = 0.45; // 降低亮度，使颜色更深沉
         const vividColor = hsl.formatHex();
 
         return {
             id: i, nameRaw: name, nameCN: nameMapCN[name] || name, group: partCN,
-            color: baseColor,       // 原始色（已不再使用）
-            colorVivid: vividColor, // 🌟 全局使用这个高亮鲜艳色
-            x: raw.mean_pose[i][0], y: raw.mean_pose[i][1],
+            color: baseColor,       // 原始色
+            colorVivid: vividColor, // 全局使用这个高亮鲜艳色
+            x: raw.mean_pose[i][0], 
+            y: 1 - raw.mean_pose[i][1],
             x_std: raw.std_dev_pose[i][0], y_std: raw.std_dev_pose[i][1], vis: raw.visibility_prob[i]
         };
     });
@@ -207,13 +217,13 @@ function render() {
         <style>${getStylesHTML()}</style>
         <div class="sv2-root">
             <div class="sv2-card">
-                <div class="sv2-title">骨架拓扑分析</div>
-                <div class="sv2-subtitle">深色骨架 · 高斯概率场 · 1σ/3σ边界</div>
+                <div class="sv2-title">人体节点分析</div>
+                <div class="sv2-subtitle">节点 · 1σ/3σ边界</div>
                 <div id="view-skeleton" class="sv2-chart-area"></div>
             </div>
             <div class="sv2-card">
                 <div class="sv2-title">可见性环形展示</div>
-                <div class="sv2-subtitle">各个关节点对比图</div>
+                <div class="sv2-subtitle">各个节点对比图</div>
                 <div id="view-radar" class="sv2-chart-area"></div>
             </div>
             <div id="tooltip" class="sv2-tooltip"></div>
@@ -225,6 +235,13 @@ function render() {
         renderSkeletonSystem(shadowRoot, keypoints, skeleton, tooltip);
         renderRadarSystem(shadowRoot, keypoints, tooltip);
     });
+
+    // 统一的交互事件处理
+    EventBus.on("focus", (id) => {
+        focusedKeypointId = id;
+        EventBus.emit("updateFocus");
+    });
+    EventBus.on("blur", () => { focusedKeypointId = null; EventBus.emit("updateFocus"); });
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -246,18 +263,72 @@ function renderSkeletonSystem(root, nodes, links, tooltip) {
         rg.append("stop").attr("offset", "100%").attr("stop-color", d.colorVivid).attr("stop-opacity", 0);
     });
 
-    drawSkeletonLegend(svg, 20, 20);
+    // 👇 [新增点] 添加一个非常淡的网格背景图案
+    const gridSize = 20;
+    const gridPattern = defs.append("pattern")
+        .attr("id", "grid-pattern")
+        .attr("width", gridSize)
+        .attr("height", gridSize)
+        .attr("patternUnits", "userSpaceOnUse");
+    gridPattern.append("path")
+        .attr("d", `M ${gridSize} 0 L 0 0 0 ${gridSize}`)
+        .attr("fill", "none")
+        .attr("stroke", "rgba(0,0,0,0.15)") // 使用极淡的颜色
+        .attr("stroke-width", 0.5);
 
     const margin = 60;
     const xScale = d3.scaleLinear().domain([0, 1]).range([margin, width - margin]);
-    const yScale = d3.scaleLinear().domain([0, 1]).range([margin, height - margin]);
+    const yScale = d3.scaleLinear().domain([0, 1]).range([height - margin, margin]);
     const xRatio = width - 2 * margin; const yRatio = height - 2 * margin;
+
+    // 👇 [新增点] 定义曲线生成器，让骨骼更平滑
+    const lineGenerator = d3.line()
+        .x(d => xScale(d.x))
+        .y(d => yScale(d.y))
+        .curve(d3.curveCatmullRom.alpha(0.5)); // 使用 Catmull-Rom 曲线，提供适度平滑
 
     const gMain = svg.append("g");
 
-    gMain.append("g").attr("class", "layer-bones").selectAll("path").data(links).join("path")
+    // 👇 [新增点] 应用网格背景
+    gMain.append("rect")
+        .attr("width", width)
+        .attr("height", height)
+        .attr("fill", "url(#grid-pattern)");
+
+    // --- 坐标轴 ---
+    const xAxis = d3.axisBottom(xScale).ticks(5).tickFormat(d3.format(".1f"));
+    const yAxis = d3.axisLeft(yScale).ticks(5).tickFormat(d3.format(".1f"));
+
+    gMain.append("g")
+        .attr("class", "x-axis")
+        .attr("transform", `translate(0, ${height - margin})`)
+        .call(xAxis)
+        .selectAll("text").style("font-size", "10px");
+
+    gMain.append("g")
+        .attr("class", "y-axis")
+        .attr("transform", `translate(${margin}, 0)`)
+        .call(yAxis)
+        .selectAll("text").style("font-size", "10px");
+
+    gMain.append("text").attr("class", "axis-label").attr("x", width / 2).attr("y", height - 15).attr("text-anchor", "middle").text("x轴");
+    gMain.append("text").attr("class", "axis-label").attr("transform", `translate(20, ${height / 2}) rotate(-90)`).attr("text-anchor", "middle").text("y轴");
+    // --- 结束：坐标轴 ---
+
+    // --- 图例 ---
+    const legendGroup = drawSkeletonLegend(svg, 0, 20); // 先在(0, 20)绘制以测量尺寸
+    const legendWidth = legendGroup.node().getBBox().width;
+    legendGroup.attr("transform", `translate(${width - legendWidth - 150}, -30)`); // 根据宽度移动到右上角
+
+    // 👇 [修改点] 使用曲线并添加入场动画
+    const bones = gMain.append("g").attr("class", "layer-bones").selectAll("path").data(links).join("path")
         .attr("class", "bone")
-        .attr("d", d => `M${xScale(d.source.x)},${yScale(d.source.y)} L${xScale(d.target.x)},${yScale(d.target.y)}`);
+        .attr("d", d => lineGenerator([d.source, d.target]))
+        .attr("fill", "none") // 曲线路径不填充
+        .attr("stroke-dasharray", function() { const length = this.getTotalLength(); return `${length} ${length}`; })
+        .attr("stroke-dashoffset", function() { return this.getTotalLength(); });
+    // 骨骼绘制动画
+    bones.transition().duration(1000).delay(200).ease(d3.easeSinOut).attr("stroke-dashoffset", 0);
 
     const rangeGroup = gMain.append("g").attr("class", "layer-ranges");
     
@@ -281,34 +352,45 @@ function renderSkeletonSystem(root, nodes, links, tooltip) {
     // 🌟 节点使用 d.colorVivid
     const nodesLayer = gMain.append("g").attr("class", "layer-nodes").selectAll("circle").data(nodes).join("circle")
         .attr("class", "keypoint-core").attr("cx", d => xScale(d.x)).attr("cy", d => yScale(d.y))
-        .attr("r", 4.5).attr("fill", d => d.colorVivid).attr("stroke", "#fff").attr("stroke-width", 2);
+        .attr("r", 0) // 初始半径为0，用于入场动画
+        .attr("fill", d => d.colorVivid).attr("stroke", "#fff").attr("stroke-width", 2);
+    
+    // 👇 [新增点] 节点入场动画
+    nodesLayer.transition().duration(600).delay((d, i) => i * 20).ease(d3.easeElasticOut.amplitude(1.5))
+        .attr("r", 4.5);
 
     const delaunay = d3.Delaunay.from(nodes, d => xScale(d.x), d => yScale(d.y));
     const voronoi = delaunay.voronoi([0, 0, width, height]);
     gMain.append("g").attr("class", "layer-voronoi").selectAll("path").data(nodes).join("path")
         .attr("d", (d, i) => voronoi.renderCell(i)).attr("fill", "transparent").style("cursor", "crosshair")
-        .on("mouseenter", (e, d) => { handleFocus(d.id); EventBus.emit("active", d.id); showTooltip(e, d, tooltip, root); })
-        .on("mouseleave", () => { handleReset(); EventBus.emit("inactive", null); tooltip.classed("visible", false); });
+        .on("mousemove", (e, d) => {
+            // console.log(e, d);
+            showTooltip(e, d, tooltip, root);
+        })
+        .on("mouseenter", (e, d) => { EventBus.emit("focus", d.id); showTooltip(e, d, tooltip, root); })
+        .on("mouseleave", () => { EventBus.emit("blur"); tooltip.classed("visible", false); });
 
-    function handleFocus(id) {
-        nodesLayer.classed("dimmed-node", d => d.id !== id);
-        nodesLayer.filter(d => d.id === id).transition().duration(100).attr("r", 7).attr("stroke-width", 3);
-        blobs.filter(d => d.id === id).style("opacity", 1);
-        boundaryOuter.filter(d => d.id === id).style("opacity", 1);
-        boundaryInner.filter(d => d.id === id).style("opacity", 1);
-    }
+    function updateFocusStyle() {
+        const isFocused = focusedKeypointId !== null;
+        
+        nodesLayer
+            .classed("dimmed-node", d => isFocused && d.id !== focusedKeypointId)
+            .filter(d => d.id === focusedKeypointId).raise()
+            .transition().duration(100).attr("r", 7).attr("stroke-width", 3);
+            
+        nodesLayer.filter(d => d.id !== focusedKeypointId).transition().attr("r", 4.5).attr("stroke-width", 2);
 
-    function handleReset() {
-        nodesLayer.classed("dimmed-node", false).transition().attr("r", 4.5).attr("stroke-width", 2);
-        blobs.style("opacity", 0); boundaryOuter.style("opacity", 0); boundaryInner.style("opacity", 0);
+        blobs.style("opacity", d => d.id === focusedKeypointId ? 1 : 0);
+        boundaryOuter.style("opacity", d => d.id === focusedKeypointId ? 1 : 0);
+        boundaryInner.style("opacity", d => d.id === focusedKeypointId ? 1 : 0);
     }
-    EventBus.on("active", (id) => handleFocus(id)); EventBus.on("inactive", () => handleReset());
+    EventBus.on("updateFocus", updateFocusStyle);
 }
 
 function drawSkeletonLegend(svg, x, y) {
     const g = svg.append("g").attr("class", "legend-group").attr("transform", `translate(${x}, ${y})`);
     g.append("text").attr("class", "legend-title").text("图例 / LEGEND").attr("y", 0);
-    
+
     // 生成一个示范用的高亮色
     const vividAccent = d3.hsl(THEME.colors.text.accent);
     vividAccent.s = 1.0; vividAccent.l = 0.45;
@@ -347,6 +429,8 @@ function drawSkeletonLegend(svg, x, y) {
         }
         row.append("text").attr("class", "legend-text").attr("x", 30).text(item.text);
     });
+
+    return g; // 返回图例的g元素，以便获取其尺寸
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -379,21 +463,43 @@ function renderRadarSystem(root, data, tooltip) {
     const rScale = d3.scaleLinear().range([innerRadius, radius]).domain([0, 1]);
 
     const gridLevels = [0.25, 0.5, 0.75, 1.0];
-    g.append("g").attr("class", "grid-lines").selectAll("circle").data(gridLevels).join("circle")
-        .attr("class", "radar-grid-line").attr("r", d => rScale(d)).attr("fill", "none");
+    const grid = g.append("g").attr("class", "grid-lines").selectAll("circle").data(gridLevels).join("circle")
+        .attr("class", "radar-grid-line")
+        .attr("r", 0) // 初始半径为0
+        .attr("fill", "none");
+    
+    // 👇 [新增点] 网格线入场动画
+    grid.transition().duration(800).ease(d3.easeCubicOut)
+        .delay((d, i) => i * 100)
+        .attr("r", d => rScale(d));
+
+    // --- 辅助线数值标签 ---
+    g.append("g").attr("class", "grid-labels").selectAll("text").data(gridLevels).join("text")
+        .attr("x", 4).attr("y", d => -rScale(d) - 4)
+        .attr("font-size", "10px").attr("fill", THEME.colors.text.sub)
+        .text(d => d > 0.25 ? `${d * 100}%` : "")
+        .attr("opacity", 0)
+        .transition().duration(500).delay(500).attr("opacity", 1);
 
     const arc = d3.arc().innerRadius(innerRadius).outerRadius(d => rScale(d.vis))
         .startAngle(d => angleScale(d.nameCN)).endAngle(d => angleScale(d.nameCN) + angleScale.bandwidth())
         .padAngle(0.03).padRadius(innerRadius);
 
-    // 👇 [修改点] 修复交互事件传递
     const slices = g.append("g").selectAll("path").data(sortedData).join("path")
         .attr("class", "radar-slice").attr("d", arc)
         .attr("fill", d => d.colorVivid) 
-        .on("mouseenter", (e, d) => triggerActive(e, d.id, e.target)) // 传递事件对象 e
-        .on("mouseleave", (e, d) => triggerInactive(e.target));
+        .on("mouseenter", (e, d) => { EventBus.emit("focus", d.id); showTooltip(e, d, tooltip, root); })
+        .on("mouseleave", () => { EventBus.emit("blur"); tooltip.classed("visible", false); });
 
-    // 👇 [修改点] 修复交互事件传递
+    // 👇 [新增点] 扇区入场动画
+    const arcTween = d3.arc().innerRadius(innerRadius).padAngle(0.03).padRadius(innerRadius)
+        .startAngle(d => angleScale(d.nameCN)).endAngle(d => angleScale(d.nameCN) + angleScale.bandwidth());
+    slices.transition().duration(1000).ease(d3.easeCubicOut).delay((d, i) => i * 30)
+        .attrTween("d", function(d) {
+            const i = d3.interpolate(0, d.vis);
+            return t => arcTween.outerRadius(rScale(i(t)))(d);
+        });
+
     const beads = g.append("g").attr("class", "radar-beads").selectAll("circle").data(sortedData).join("circle")
         .attr("class", "radar-bead")
         .attr("cx", d => Math.cos(angleScale(d.nameCN) + angleScale.bandwidth() / 2 - Math.PI / 2) * rScale(d.vis))
@@ -401,43 +507,44 @@ function renderRadarSystem(root, data, tooltip) {
         .attr("r", 5)
         .attr("fill", d => d.colorVivid) 
         .attr("stroke", "#fff").attr("stroke-width", 2) 
-        .on("mouseenter", (e, d) => triggerActive(e, d.id, e.target)) // 传递事件对象 e
-        .on("mouseleave", (e, d) => triggerInactive(e.target));
+        .on("mouseenter", (e, d) => { EventBus.emit("focus", d.id); showTooltip(e, d, tooltip, root); })
+        .on("mouseleave", () => { EventBus.emit("blur"); tooltip.classed("visible", false); });
+    
+    // 👇 [新增点] 珠子入场动画
+    beads.transition().duration(1000).ease(d3.easeCubicOut)
+        .delay((d, i) => 500 + i * 30) // 在扇区动画后开始
+        .attr("cx", d => Math.cos(angleScale(d.nameCN) + angleScale.bandwidth() / 2 - Math.PI / 2) * rScale(d.vis))
+        .attr("cy", d => Math.sin(angleScale(d.nameCN) + angleScale.bandwidth() / 2 - Math.PI / 2) * rScale(d.vis));
 
     g.append("g").selectAll("text").data(sortedData).join("text").attr("class", "radar-label").attr("text-anchor", "middle")
+        .attr("opacity", 0) // 初始透明
         .attr("transform", d => {
             const a = angleScale(d.nameCN) + angleScale.bandwidth() / 2 - Math.PI / 2;
             const r = radius + 12; 
             return `translate(${Math.cos(a)*r}, ${Math.sin(a)*r})`;
         })
         .text(d => d.nameCN)
-        .style("fill", d => d.colorVivid); 
+        .style("fill", d => d.colorVivid)
+        .transition().duration(800).delay(800).attr("opacity", 1); // 延迟淡入
 
-    // 👇 [修改点] 接收事件对象并正确传递给 showTooltip
-    function triggerActive(event, id, target) {
-        EventBus.emit("active", id); handleFocus(id);
-        const d = sortedData.find(item => item.id === id); 
-        // 使用传入的 event 对象，而不是废弃的 d3.event
-        showTooltip(event, d, tooltip, root); 
-        d3.select(target).classed("focused", true);
+    function updateFocusStyle() {
+        const isFocused = focusedKeypointId !== null;
+        slices.classed("dimmed", d => isFocused && d.id !== focusedKeypointId);
+        beads.classed("dimmed", d => isFocused && d.id !== focusedKeypointId);
+        
+        if (isFocused) {
+            slices.filter(d => d.id === focusedKeypointId).classed("focused", true);
+            beads.filter(d => d.id === focusedKeypointId).classed("focused", true).raise();
+        } else {
+            slices.classed("focused", false);
+            beads.classed("focused", false);
+        }
     }
-    function triggerInactive(target) {
-        EventBus.emit("inactive", null); handleReset();
-        tooltip.classed("visible", false); d3.select(target).classed("focused", false);
-    }
-    function handleFocus(id) {
-        slices.classed("dimmed", d => d.id !== id).filter(d => d.id === id).classed("focused", true);
-        beads.classed("dimmed", d => d.id !== id).filter(d => d.id === id).classed("focused", true);
-    }
-    function handleReset() {
-        slices.classed("dimmed", false).classed("focused", false);
-        beads.classed("dimmed", false).classed("focused", false);
-    }
-    EventBus.on("active", (id) => handleFocus(id)); EventBus.on("inactive", () => handleReset());
+    EventBus.on("updateFocus", updateFocusStyle);
 }
 
 function drawRadarLegend(svg, x, y) {
-    const g = svg.append("g").attr("class", "legend-group").attr("transform", `translate(${x}, ${y})`);
+    const g = svg.append("g").attr("class", "legend-group").attr("transform", `translate(${x+430}, ${y-50})`);
     g.append("text").attr("class", "legend-title").text("图例 / LEGEND").attr("y", 0);
     const items = [{ type: "slice", text: "各关节可见性 (半径长度)" },  { type: "grid", text: "辅助线方便比较" }];
     
@@ -463,6 +570,7 @@ function showTooltip(event, d, tooltip, root) {
             <div style="color:${d.colorVivid}; font-size:0.9em; margin-bottom:8px;">所属: ${d.group}</div>
             <div style="display:grid; grid-template-columns: auto auto; gap: 6px 20px; font-size:0.9em; color:#cbd5e1;">
                 <span>可见性:</span> <span style="font-family:monospace; color:#f8fafc; font-weight:bold;">${(d.vis * 100).toFixed(0)}%</span>
+                <span>平均坐标:</span> <span style="font-family:monospace; color:#f8fafc;">(${(d.x).toFixed(2)}, ${(d.y).toFixed(2)})</span>
                 <span>X轴偏差(3σ):</span> <span style="font-family:monospace; color:#f8fafc;">${(d.x_std * 3).toFixed(3)}</span>
                 <span>Y轴偏差(3σ):</span> <span style="font-family:monospace; color:#f8fafc;">${(d.y_std * 3).toFixed(3)}</span>
             </div>
