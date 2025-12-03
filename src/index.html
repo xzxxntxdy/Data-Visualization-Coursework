@@ -1,38 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>COCO-Verse: Semantic Analysis</title>
     <style>
         :root {
-            /* 核心色板 - 更加现代的冷灰色系 */
-            --bg-body: #f8fafc;        /* 极淡的冷灰背景 */
-            --bg-panel: #ffffff;       /* 纯白面板 */
-            
-            /* 侧边栏色系 - 深邃午夜蓝 */
-            --sidebar-bg: #0f172a;     
+            --bg-body: #f8fafc;
+            --bg-panel: #ffffff;
+            --sidebar-bg: #0f172a;
             --sidebar-text: #94a3b8;
             --sidebar-text-hover: #f1f5f9;
-            
-            /* 强调色 - 现代靛蓝 (Indigo) */
-            --accent: #6366f1;         
+            --accent: #6366f1;
             --accent-hover: #4f46e5;
-            --accent-light: #e0e7ff;   /* 浅色背景用于Tag */
-            --accent-text: #4338ca;    /* 深色文字用于Tag */
-
-            /* 文字颜色 */
-            --text-main: #1e293b;      /* 深灰黑色，比纯黑更柔和 */
-            --text-muted: #64748b;     /* 次级文字 */
-            
-            /* 边框与装饰 */
+            --accent-light: #e0e7ff;
+            --accent-text: #4338ca;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
             --border-color: #e2e8f0;
             --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
             --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             --radius-md: 12px;
-            --heat-start: #f8fafc;
-            --heat-mid: #fee0d2;
-            --heat-strong: #fb6a4a;
         }
 
         body {
@@ -41,19 +29,414 @@
             background-color: var(--bg-body);
             color: var(--text-main);
             overflow: hidden;
-            -webkit-font-smoothing: antialiased; /* 让字体更清晰 */
+            -webkit-font-smoothing: antialiased;
         }
+
+        /* ========== Portal 层 ========== */
+
+        .portal-layer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: radial-gradient(circle at top, #020617 0, #020617 60%, #000 100%);
+            color: #e5e7eb;
+            opacity: 1;
+            transition: opacity 0.4s ease, filter 0.4s ease;
+        }
+
+        .portal-hidden {
+            display: none;
+        }
+
+        .portal-bg {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .bg-frame {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+            filter: grayscale(0.1) brightness(0.9); /* 比之前更亮一些 */
+        }
+
+        .bg-frame.active {
+            opacity: 0.85;
+        }
+
+        .bg-frame[data-bg-frame="intro"] {
+            background-image: url("./bg/bg_intro_lens.png");
+        }
+        .bg-frame[data-bg-frame="spatial"] {
+            background-image: url("./bg/bg_spatial_outdoor.png");
+        }
+        .bg-frame[data-bg-frame="semantic"] {
+            background-image: url("./bg/bg_semantic_social.png");
+        }
+        .bg-frame[data-bg-frame="pose"] {
+            background-image: url("./bg/bg_pose_biometric.png");
+        }
+
+        .portal-main {
+            position: relative;
+            display: grid;
+            grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+            gap: 16px;                 /* 原来 24px -> 16px，减少左右空隙 */
+            padding: 16px 24px;        /* 原来 20px 32px -> 更紧一点 */
+            box-sizing: border-box;
+            height: 100%;
+            z-index: 1;
+        }
+
+        @media (max-width: 1100px) {
+            .portal-main {
+                grid-template-columns: 1fr;
+                padding: 16px;
+            }
+        }
+
+        .hero-stage {
+            position: relative;
+            /* macOS 磨砂玻璃：淡色 + 高 blur + 高饱和度 */
+            background: rgba(255, 255, 255, 0.24);
+            backdrop-filter: blur(26px) saturate(180%);
+            -webkit-backdrop-filter: blur(26px) saturate(180%);
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            box-shadow: 0 14px 32px rgba(15, 23, 42, 0.35);
+            padding: 12px 14px 14px;   /* 比之前更紧凑，减少容器内部留白 */
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow: hidden;
+            transform-origin: center;
+            transition: transform 0.4s ease, opacity 0.4s ease;
+        }
+
+
+        .hero-stage-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .hero-title-block h1 {
+            margin: 0;
+            font-size: 22px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+        }
+
+        .hero-title-block p {
+            margin: 4px 0 0;
+            color: #cbd5f5;
+            font-size: 12px;
+        }
+
+        .hero-status {
+            font-size: 11px;
+            color: #9ca3af;
+            line-height: 1.5;
+            text-align: right;
+        }
+
+        .hero-status span {
+            color: #4ade80;
+        }
+
+        #hero-stage-frame {
+            position: relative;
+            flex: 1;
+            min-height: 260px;
+            border-radius: 14px;
+            overflow: hidden;
+            /* 这里改成浅色半透明，而不是深色渐变，避免图像周围一圈黑 */
+            background: rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(18px) saturate(160%);
+            -webkit-backdrop-filter: blur(18px) saturate(160%);
+        }
+
+
+        .hero-frame {
+            position: absolute;
+            inset: 0;
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .hero-frame.active {
+            opacity: 1;
+        }
+
+        .hero-frame[data-hero-frame="intro"] {
+            background-image: url("./data/hero_image.jpg");
+        }
+        .hero-frame[data-hero-frame="spatial"] {
+            background-image: url("./data/hero_spatial.png");
+        }
+        .hero-frame[data-hero-frame="semantic"] {
+            background-image: url("./data/hero_semantic.png");
+        }
+        .hero-frame[data-hero-frame="pose"] {
+            background-image: url("./data/hero_pose.png");
+        }
+
+        #hero-overlay {
+            position: absolute;
+            left: 0;
+            top: 0;
+            pointer-events: none;
+        }
+
+        .hero-meta-strip {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            font-size: 11px;
+            color: #e5e7eb;
+        }
+
+        .hero-meta-strip .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 999px;
+            background: #22c55e;
+            box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.25);
+        }
+
+        .hero-stats {
+            margin-left: auto;
+            display: flex;
+            gap: 16px;
+        }
+
+        .hero-stat-item {
+            text-align: right;
+        }
+
+        .hero-stat-label {
+            color: #9ca3af;
+            font-size: 11px;
+        }
+
+        .hero-stat-value {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .hero-captions {
+            margin: 8px 0 0;
+            padding-left: 16px;
+            font-size: 11px;
+            color: #cbd5f5;
+        }
+
+        .hero-captions li + li {
+            margin-top: 2px;
+        }
+
+        #story-scroll {
+            background: rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 14px 16px 16px;
+            box-shadow: 0 14px 32px rgba(15, 23, 42, 0.35);
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+
+
+        .story-step {
+            padding: 12px 10px 12px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            border: 1px solid transparent;
+            transition: border-color 0.25s ease, background 0.25s ease, transform 0.25s ease;
+        }
+
+        .story-step h3 {
+            margin: 0 0 4px;
+            font-size: 13px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: #a5b4fc;
+        }
+
+        .story-step h2 {
+            margin: 2px 0 6px;
+            font-size: 16px;
+            color: #e5e7eb;
+        }
+
+        .story-step p {
+            margin: 3px 0;
+            font-size: 12px;
+            color: #cbd5f5;
+            line-height: 1.6;
+        }
+
+        .story-step.active {
+            border-color: #6366f1;
+            background: radial-gradient(circle at top left, rgba(99, 102, 241, 0.25), transparent 55%);
+            transform: translateY(-1px);
+        }
+
+        .story-step small {
+            font-size: 11px;
+            color: #9ca3af;
+        }
+
+        .handoff-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 900px) {
+            .handoff-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .portal-card {
+            border-radius: 12px;
+            border: 1px solid rgba(148, 163, 184, 0.6);
+            background: radial-gradient(circle at top, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.96));
+            padding: 10px 10px 11px;
+            text-align: left;
+            cursor: pointer;
+            color: inherit;
+            font: inherit;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+        }
+
+        .portal-card:hover {
+            transform: translateY(-2px);
+            border-color: #6366f1;
+            box-shadow: 0 16px 32px rgba(15, 23, 42, 0.8);
+        }
+
+        .portal-card-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #e5e7eb;
+        }
+
+        .portal-card-desc {
+            font-size: 11px;
+            color: #cbd5f5;
+        }
+
+        .portal-card-tag {
+            margin-top: 4px;
+            font-size: 10px;
+            color: #a5b4fc;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+        }
+
+        .portal-cta {
+            margin-top: 12px;
+            padding: 10px 18px;
+            border-radius: 999px;
+            border: none;
+            background: linear-gradient(to right, #6366f1, #22c55e);
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 15px 40px rgba(79, 70, 229, 0.6);
+        }
+
+        .portal-cta span.arrow {
+            font-size: 14px;
+        }
+
+        #aggregate-flash {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            padding: 8px 16px;
+            border-radius: 999px;
+            background: radial-gradient(circle at top left, #6366f1, #22c55e);
+            color: #f9fafb;
+            font-size: 11px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.9);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 20;
+        }
+
+        #aggregate-flash.show {
+            opacity: 1;
+        }
+
+        .portal-layer.archiving {
+            filter: blur(1.5px);
+        }
+
+        .hero-stage.archiving {
+            transform: scale(0.9);
+            opacity: 0.25;
+        }
+
+        .hero-stage.returning {
+            animation: portal-return 0.8s ease both;
+        }
+
+        @keyframes portal-return {
+            0% {
+                transform: scale(0.85);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* ========== Dashboard 区（原逻辑） ========== */
 
         .dashboard {
             display: grid;
-            grid-template-columns: 240px 1fr; /* 稍微加宽侧边栏 */
+            grid-template-columns: 240px 1fr;
             gap: 20px;
             padding: 20px;
             box-sizing: border-box;
             height: 100vh;
+            opacity: 0;
+            transition: opacity 0.4s ease;
         }
 
-        /* --- 侧边栏优化 --- */
+        .dashboard.dashboard-hidden {
+            display: none;
+        }
+
         .sidebar {
             background: var(--sidebar-bg);
             color: var(--sidebar-text);
@@ -74,7 +457,7 @@
         }
 
         .sidebar p {
-            color: #64748b !important; /* 强制覆盖 */
+            color: #64748b !important;
             margin-top: 4px;
         }
 
@@ -109,10 +492,9 @@
         .nav-item.active {
             background: var(--accent);
             color: #ffffff;
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4); /* 增加发光感 */
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
         }
 
-        /* --- 主视图区域 --- */
         .view-area {
             display: flex;
             flex-direction: column;
@@ -132,8 +514,7 @@
             min-height: 0;
             transition: box-shadow 0.2s;
         }
-        
-        /* 头部样式 */
+
         .header {
             border: none;
             background: transparent;
@@ -193,10 +574,9 @@
             border: none;
         }
 
-        /* --- 控件区优化 --- */
         .control-strip {
             display: grid;
-            grid-template-columns: 1.5fr 1fr auto; /* 调整比例 */
+            grid-template-columns: 1.5fr 1fr auto;
             gap: 16px;
             align-items: end;
             padding-bottom: 16px;
@@ -227,10 +607,9 @@
 
         .control-group input[type="text"]:focus {
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); /* 聚焦光晕 */
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
 
-        /* 滑动条美化 */
         input[type="range"] {
             width: 100%;
             accent-color: var(--accent);
@@ -267,23 +646,6 @@
             margin-bottom: 10px;
         }
 
-        .excluded-chip {
-            padding: 4px 10px;
-            background: #f1f5f9;
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            color: var(--text-main);
-            font-size: 12px;
-            margin-right: 4px;
-            cursor: pointer;
-        }
-        .excluded-chip:hover {
-            background: #e2e8f0;
-            color: #ef4444; /* 删除时变红 */
-            border-color: #fca5a5;
-        }
-
-        /* --- 图表区域 --- */
         .semantic-layout {
             display: grid;
             grid-template-columns: 3fr 1fr;
@@ -294,7 +656,6 @@
         }
 
         .graph-area {
-            /* 技术感网格背景 */
             background-color: #fafafa;
             background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
             background-size: 20px 20px;
@@ -322,25 +683,6 @@
             border-bottom: 1px dashed var(--border-color);
         }
 
-        .info-list {
-            margin: 0;
-            padding-left: 20px;
-            color: var(--text-muted);
-            line-height: 1.6;
-        }
-
-        /* 占位符样式 */
-        .placeholder {
-            align-items: center;
-            justify-content: center;
-            border: 2px dashed var(--border-color);
-            background: #f8fafc;
-        }
-        .placeholder-text {
-            color: var(--text-muted);
-            font-weight: 500;
-        }
-
         .tooltip {
             position: absolute;
             padding: 8px 12px;
@@ -354,174 +696,6 @@
             z-index: 100;
         }
 
-        /* --- 新增：统计与矩阵视图 --- */
-        .stats-layout {
-            display: grid;
-            grid-template-columns: 1.15fr 1fr;
-            gap: 16px;
-            min-height: 0;
-            flex: 1;
-        }
-
-        .subpanel {
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 14px;
-            background: #fff;
-            box-shadow: var(--shadow-sm);
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-        }
-
-        .subpanel h2 {
-            margin: 0 0 8px 0;
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--text-main);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            justify-content: space-between;
-        }
-
-        .bar-chart-wrapper, .matrix-wrapper {
-            position: relative;
-            flex: 1;
-            min-height: 320px;
-        }
-
-        #freq-bar, #cond-matrix {
-            width: 100%;
-            height: 100%;
-        }
-
-        .matrix-controls {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 4px;
-            margin-bottom: 8px;
-        }
-
-        .chip-btn {
-            border: 1px solid var(--border-color);
-            background: #fff;
-            color: var(--text-main);
-            padding: 6px 10px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: all 0.2s ease;
-        }
-        .chip-btn:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-            background: var(--accent-light);
-        }
-
-        .icon-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            display: flex;
-            gap: 8px;
-        }
-        .icon-badge img {
-            width: 32px;
-            height: 32px;
-            object-fit: contain;
-            cursor: pointer;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));
-            transition: transform 0.15s ease;
-        }
-        .icon-badge img:hover {
-            transform: translateY(-2px);
-        }
-
-        .info-modal {
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.55);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 200;
-        }
-        .info-modal.active { display: flex; }
-        .info-card {
-            background: #fff;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: var(--shadow-md);
-            width: min(900px, 90vw);
-            max-height: 85vh;
-            overflow: auto;
-        }
-        .info-card h3 {
-            margin: 0 0 10px 0;
-            font-size: 18px;
-        }
-        .info-card p {
-            margin: 6px 0;
-            color: var(--text-muted);
-            line-height: 1.5;
-        }
-        .modal-image {
-            width: 100%;
-            height: auto;
-            max-height: 70vh;
-            object-fit: contain;
-            display: block;
-            border-radius: 8px;
-            box-shadow: var(--shadow-sm);
-        }
-        .zoom-wrap {
-            width: 100%;
-            max-height: 72vh;
-            overflow: auto;
-            background: #f8fafc;
-            padding: 6px;
-            border-radius: 10px;
-        }
-        .info-close {
-            margin-top: 12px;
-            padding: 8px 12px;
-            border-radius: 8px;
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            cursor: pointer;
-        }
-
-        .head-actions {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .corner-icons {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-direction: column;
-            justify-content: center;
-        }
-        .corner-icons img {
-            width: 52px;
-            height: 52px;
-            cursor: pointer;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));
-            transition: transform 0.15s ease;
-        }
-        .corner-icons img:hover {
-            transform: translateY(-2px);
-        }
-        .icon-hint {
-            font-size: 11px;
-            color: var(--text-muted);
-            text-align: center;
-            line-height: 1.4;
-        }
         .side-header {
             display: flex;
             align-items: center;
@@ -547,23 +721,177 @@
             line-height: 1.2;
         }
 
-        @media (max-width: 1100px) {
-            .stats-layout {
-                grid-template-columns: 1fr;
-            }
-            .matrix-wrapper {
-                min-height: 360px;
-            }
+        .info-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
         }
+        .info-modal.active { display: flex; }
+        .info-card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            width: min(900px, 90vw);
+            max-height: 85vh;
+            overflow: auto;
+        }
+
+        .info-close {
+            margin-top: 12px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        .zoom-wrap {
+            width: 100%;
+            max-height: 72vh;
+            overflow: auto;
+            background: #f8fafc;
+            padding: 6px;
+            border-radius: 10px;
+        }
+
     </style>
 </head>
 <body>
-    <main class="dashboard">
+
+    <!-- Portal -->
+    <section id="portal-layer" class="portal-layer">
+        <div class="portal-bg">
+            <div class="bg-frame active" data-bg-frame="intro"></div>
+            <div class="bg-frame" data-bg-frame="spatial"></div>
+            <div class="bg-frame" data-bg-frame="semantic"></div>
+            <div class="bg-frame" data-bg-frame="pose"></div>
+        </div>
+
+        <div class="portal-main">
+            <section id="hero-stage" class="hero-stage">
+                <div class="hero-stage-header">
+                    <div class="hero-title-block">
+                        <h1>COCO-VERSE</h1>
+                        <p>Decoding Common Objects in Context · 解码语境中的常见物体</p>
+                    </div>
+                    <div class="hero-status">
+                        <div>SYSTEM STATUS: <span>INITIALIZING…</span></div>
+                        <div>INPUT SOURCE: COCO 2017 VAL SET</div>
+                        <div>CURRENT SAMPLE ID: <strong>457718</strong></div>
+                    </div>
+                </div>
+
+                <div id="hero-stage-frame">
+                    <div class="hero-frame active" data-hero-frame="intro"></div>
+                    <div class="hero-frame" data-hero-frame="spatial"></div>
+                    <div class="hero-frame" data-hero-frame="semantic"></div>
+                    <div class="hero-frame" data-hero-frame="pose"></div>
+
+                    <img id="hero-image" src="./data/hero_image.jpg" alt="Original sample" style="opacity:0; pointer-events:none; position:absolute; left:0; top:0;">
+                    <svg id="hero-overlay"></svg>
+                </div>
+
+                <div class="hero-meta-strip">
+                    <div class="dot"></div>
+                    <div>
+                        单张样本 <strong>#457718</strong> 的解析结果将被写入 COCO-Verse 知识图谱。
+                    </div>
+                    <div class="hero-stats">
+                        <div class="hero-stat-item">
+                            <div class="hero-stat-label">检测框</div>
+                            <div class="hero-stat-value" id="stat-bbox">52 个检测框</div>
+                        </div>
+                        <div class="hero-stat-item">
+                            <div class="hero-stat-label">姿态关键点</div>
+                            <div class="hero-stat-value" id="stat-pose">6 套关键点</div>
+                        </div>
+                    </div>
+                </div>
+
+                <ul class="hero-captions" id="hero-captions"></ul>
+            </section>
+
+            <section id="story-scroll">
+                <article class="story-step" data-state="intro">
+                    <h3>SCENE 0 · SAMPLE INJECTION</h3>
+                    <h2>样本载入：一张图的旅程</h2>
+                    <p>这一刻，只有一张图片 —— 户外聚餐的场景被送入视觉系统。</p>
+                    <p>Portal 提醒你：任何一个宏观统计视图，都可以追溯到一张具体原图。</p>
+                    <p><small>提示：在左侧舞台滚轮或在此区域滚动，浏览各个分析阶段。</small></p>
+                </article>
+
+                <article class="story-step" data-state="spatial">
+                    <h3>SCENE 1 · OBJECT LOCALIZATION</h3>
+                    <h2>空间定界：从像素到边界框</h2>
+                    <p>机器认知的起点，是给世界画出边界。在这一张样本图像中，算法定位出 <strong>52 个实例</strong>。</p>
+                    <p>同样的过程被复制到整个 COCO 数据集，超 <strong>860,000</strong> 个实例被写入空间索引。</p>
+                </article>
+
+                <article class="story-step" data-state="semantic">
+                    <h3>SCENE 2 · CONTEXTUAL LOGIC</h3>
+                    <h2>语义编织：物体之间的关系网络</h2>
+                    <p>餐桌定义盘子，人定义椅子。单个物体在上下文中才有意义。</p>
+                    <p>我们构建 80 个类别的语义图，并扩展到全量共现矩阵。</p>
+                </article>
+
+                <article class="story-step" data-state="pose">
+                    <h3>SCENE 3 · BIOLOGICAL STRUCTURE</h3>
+                    <h2>姿态透视：穿透表象的骨架</h2>
+                    <p>从 RGB 穿透到骨架，对每个人体预测 17 个关键点并连成 COCO 标准骨架。</p>
+                    <p>超过 250,000 个人体被解析，用于研究可见性与动作模式。</p>
+                </article>
+
+                <article class="story-step" data-state="handoff">
+                    <h3>SCENE 4 · PORTAL HANDOFF</h3>
+                    <h2>从 1 到 123,287：跳转到全量视角</h2>
+                    <p>你已经体验了“一张图”的完整处理路径，现在将视野放大到 123,287 张图像。</p>
+                    <p>下面卡片分别对应不同 Dashboard 视角，可随时再回到这个样本 Portal。</p>
+
+                    <div class="handoff-grid">
+                        <button class="portal-card" type="button" data-launch-target="spatial-view">
+                            <div class="portal-card-tag">SPATIAL VIEW</div>
+                            <div class="portal-card-title">Spatial Dashboard</div>
+                            <div class="portal-card-desc">探索 123,287 张图片中的目标位置分布与尺度差异。</div>
+                        </button>
+                        <button class="portal-card" type="button" data-launch-target="semantic-view">
+                            <div class="portal-card-tag">SEMANTIC VIEW</div>
+                            <div class="portal-card-title">Semantic Dashboard</div>
+                            <div class="portal-card-desc">可视化 80 个类别的共现网络，观察语义偏好。</div>
+                        </button>
+                        <button class="portal-card" type="button" data-launch-target="pose-view">
+                            <div class="portal-card-tag">POSE VIEW</div>
+                            <div class="portal-card-title">Pose Dashboard</div>
+                            <div class="portal-card-desc">分析 25 万人体的 17 个关键点，理解姿态模式。</div>
+                        </button>
+                    </div>
+
+                    <button id="cta-button" class="portal-cta" type="button">
+                        一键进入语义 Dashboard <span class="arrow">↗</span>
+                    </button>
+                </article>
+            </section>
+        </div>
+
+        <div id="aggregate-flash">AGGREGATING DATA FROM 123,287 IMAGES…</div>
+    </section>
+
+    <!-- Dashboard（原全量分析） -->
+    <main class="dashboard dashboard-hidden">
         <aside class="sidebar">
             <div>
                 <h2>COCO-Verse</h2>
                 <p style="font-size:12px; opacity:0.7;">Semantic Analysis Tool</p>
             </div>
+
+            <button class="ghost-btn" id="back-to-portal-btn" type="button" style="margin-top:8px;">
+                ← 返回 Portal
+            </button>
             
             <div class="nav-group">
                 <button class="nav-item active" data-target="semantic-view">
@@ -583,6 +911,7 @@
                 <h1>COCO-Verse 多视图分析</h1>
             </div>
 
+            <!-- 语义视图（原样保留） -->
             <section class="view active" id="semantic-view">
                 <section class="panel semantic-panel">
                     <div class="panel-head">
@@ -638,6 +967,7 @@
                 </section>
             </section>
 
+            <!-- 空间视图 -->
             <section class="view" id="spatial-view">
                 <section class="panel spatial-panel" style="height:100%;">
                     <div class="panel-head">
@@ -653,7 +983,7 @@
                 </section>
             </section>
 
-            
+            <!-- 姿态视图 -->
             <section class="view" id="pose-view">
                 <section class="panel spatial-panel" style="height:100%;">
                     <div class="panel-head">
@@ -668,13 +998,12 @@
                     <div id="pose-content" style="flex:1; min-height:0; overflow:hidden;"></div>
                 </section>
             </section>
-
-
         </section>
     </main>
     
     <datalist id="categoryOptions"></datalist>
     <div class="tooltip" id="tooltip"></div>
+
     <div class="info-modal" id="bar-info">
         <div class="info-card">
             <h3>长尾频次分布</h3>
@@ -696,6 +1025,9 @@
         </div>
     </div>
 
+    <!-- Portal 逻辑 -->
+    <script type="module" src="./js/story_main.js"></script>
+    <!-- 原有分析逻辑 -->
     <script type="module" src="./js/semantic_graph.js"></script>
     <script type="module" src="./js/spatial_view.js"></script>
     <script type="module" src="./js/pose_view.js"></script>
@@ -765,11 +1097,65 @@
         makeZoomable(document.querySelector('#bar-info .zoom-wrap'));
         makeZoomable(document.querySelector('#matrix-info .zoom-wrap'));
         
-        // 简单的滑块数值联动逻辑（为了演示UI效果）
         const slider = document.getElementById('linkThreshold');
         const valDisplay = document.getElementById('thresholdValue');
-        if(slider && valDisplay) {
+        if (slider && valDisplay) {
             slider.addEventListener('input', (e) => valDisplay.textContent = e.target.value);
+        }
+
+        // ===== Portal ↔ Dashboard 动画切换 =====
+        const portalLayer = document.getElementById('portal-layer');
+        const dashboardMain = document.querySelector('main.dashboard');
+        const backToPortalBtn = document.getElementById('back-to-portal-btn');
+
+        document.addEventListener('portal:handoff', (e) => {
+            const targetId = e.detail && e.detail.targetId ? e.detail.targetId : 'semantic-view';
+
+            if (dashboardMain) {
+                dashboardMain.classList.remove('dashboard-hidden');
+                dashboardMain.style.opacity = '0';
+                requestAnimationFrame(() => {
+                    dashboardMain.style.opacity = '1';
+                });
+            }
+
+            if (portalLayer) {
+                portalLayer.style.opacity = '1';
+                requestAnimationFrame(() => {
+                    portalLayer.style.opacity = '0';
+                });
+                setTimeout(() => {
+                    portalLayer.classList.add('portal-hidden');
+                    portalLayer.style.opacity = '';
+                    portalLayer.style.filter = '';   // 防止残留虚化
+                    portalLayer.classList.remove('archiving');
+                }, 420);
+            }
+
+            activateView(targetId);
+        });
+
+        if (backToPortalBtn) {
+            backToPortalBtn.addEventListener('click', () => {
+                if (portalLayer) {
+                    portalLayer.classList.remove('portal-hidden');
+                    portalLayer.style.opacity = '0';
+                    requestAnimationFrame(() => {
+                        portalLayer.style.opacity = '1';
+                    });
+                }
+                if (dashboardMain) {
+                    dashboardMain.style.opacity = '1';
+                    requestAnimationFrame(() => {
+                        dashboardMain.style.opacity = '0';
+                    });
+                    setTimeout(() => {
+                        dashboardMain.classList.add('dashboard-hidden');
+                        dashboardMain.style.opacity = '';
+                    }, 420);
+                }
+                document.dispatchEvent(new CustomEvent('dashboard:return'));
+            });
         }
     </script>
 </body>
