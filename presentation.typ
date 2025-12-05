@@ -222,27 +222,8 @@
 == 系统架构
 
 #align(center)[
-  // 📸 占位图：slides/architecture.png - 系统架构图
-  #rect(
-    width: 85%,
-    height: 65%,
-    stroke: 1pt + gray,
-    fill: luma(240),
-  )[
-    #align(center + horizon)[
-      #text(fill: gray)[🖼️ 占位图：slides/architecture.png]
-      
-      系统架构图
-      
-      #text(size: 0.8em, fill: gray)[
-        Portal (滚动叙事) → Dashboard (三视图联动)
-        
-        D3.js + Parcel + Python
-      ]
-    ]
-  ]
+  #image("images/portal_demo.png", width: 80%)
 ]
-
 // ============================================================================
 // 可视设计总览
 // ============================================================================
@@ -307,19 +288,7 @@
 #v(1em)
 
 #align(center)[
-  // 📸 占位图：slides/dashboard_overview.png - Dashboard 三视图总览
-  #rect(
-    width: 80%,
-    height: 35%,
-    stroke: 1pt + gray,
-    fill: luma(240),
-  )[
-    #align(center + horizon)[
-      #text(fill: gray)[🖼️ 占位图：slides/dashboard_overview.png]
-      
-      Dashboard 三视图总览截图
-    ]
-  ]
+  #image("images/architecture.png", width: 80%)
 ]
 
 // ============================================================================
@@ -353,19 +322,7 @@
     - *三色编码*：COCO 官方尺度定义 (32²/96² 阈值)
   ],
   [
-    // 📸 占位图：slides/spatial_view.png - 空间视图截图
-    #rect(
-      width: 100%,
-      height: 90%,
-      stroke: 1pt + gray,
-      fill: luma(240),
-    )[
-      #align(center + horizon)[
-        #text(fill: gray)[🖼️ 占位图：slides/spatial_view.png]
-        
-        空间视图完整界面
-      ]
-    ]
+    #image("images/spatial_view.png", width: 100%)
   ]
 )
 
@@ -399,19 +356,7 @@
     - *阈值过滤*：减少视觉杂乱，聚焦强关联
   ],
   [
-    // 📸 占位图：slides/semantic_view.png - 语义视图截图
-    #rect(
-      width: 100%,
-      height: 90%,
-      stroke: 1pt + gray,
-      fill: luma(240),
-    )[
-      #align(center + horizon)[
-        #text(fill: gray)[🖼️ 占位图：slides/semantic_view.png]
-        
-        语义视图完整界面
-      ]
-    ]
+    #image("images/semantic_view.png", width: 100%)
   ]
 )
 
@@ -445,19 +390,7 @@
     - *场景过滤*：按共现物体分析姿态子集
   ],
   [
-    // 📸 占位图：slides/pose_view.png - 姿态视图截图
-    #rect(
-      width: 100%,
-      height: 90%,
-      stroke: 1pt + gray,
-      fill: luma(240),
-    )[
-      #align(center + horizon)[
-        #text(fill: gray)[🖼️ 占位图：slides/pose_view.png]
-        
-        姿态视图完整界面
-      ]
-    ]
+    #image("images/pose_view.png", width: 100%)
   ]
 )
 
@@ -489,23 +422,7 @@
     + *滑块* 筛选：过滤低共现边
   ],
   [
-    // 📸 占位图：slides/interaction_demo.gif - 交互演示 GIF
-    #rect(
-      width: 100%,
-      height: 85%,
-      stroke: 1pt + gray,
-      fill: luma(240),
-    )[
-      #align(center + horizon)[
-        #text(fill: gray)[🖼️ 占位图：slides/interaction_demo.gif]
-        
-        交互联动演示
-        
-        #text(size: 0.8em, fill: gray)[
-          展示 Brush → Filter → Highlight 流程
-        ]
-      ]
-    ]
+    #image("images/spatial_view.png", width: 100%)
   ]
 )
 
@@ -535,19 +452,7 @@
     - 尺度分布反映拍摄距离
   ],
   [
-    // 📸 占位图：slides/case1_spatial.png - 案例1截图
-    #rect(
-      width: 100%,
-      height: 90%,
-      stroke: 1pt + gray,
-      fill: luma(240),
-    )[
-      #align(center + horizon)[
-        #text(fill: gray)[🖼️ 占位图：slides/case1_spatial.png]
-        
-        car vs airplane 空间分布对比
-      ]
-    ]
+    #image("images/car_spatial.png", width: 100%)
   ]
 )
 
@@ -578,19 +483,7 @@
     - 可用于场景补全/异常检测
   ],
   [
-    // 📸 占位图：slides/case2_semantic.png - 案例2截图
-    #rect(
-      width: 100%,
-      height: 90%,
-      stroke: 1pt + gray,
-      fill: luma(240),
-    )[
-      #align(center + horizon)[
-        #text(fill: gray)[🖼️ 占位图：slides/case2_semantic.png]
-        
-        dining table 条件概率分析
-      ]
-    ]
+    #image("images/dining_semanic.png", width: 100%)
   ]
 )
 
@@ -620,19 +513,7 @@
     - 可指导姿态估计模型的遮挡处理策略
   ],
   [
-    // 📸 占位图：slides/case3_pose.png - 案例3截图
-    #rect(
-      width: 100%,
-      height: 90%,
-      stroke: 1pt + gray,
-      fill: luma(240),
-    )[
-      #align(center + horizon)[
-        #text(fill: gray)[🖼️ 占位图：slides/case3_pose.png]
-        
-        关键点可见性概率骨架图
-      ]
-    ]
+    #image("images/nose_pose.png", width: 100%)
   ]
 )
 
@@ -693,7 +574,7 @@
   #v(1em)
   
   #text(fill: gray)[
-    代码仓库：#link("https://github.com/xzxxntxdy/Data-Visualization-Coursework")[GitHub]
+    代码仓库：#link("https://github.com/xzxxntxdy/Data-Visualization-Coursework")[https://github.com/xzxxntxdy/Data-Visualization-Coursework]
     
     演示地址：#link("http://localhost:8080")[localhost:8080]
   ]
@@ -703,21 +584,3 @@
   Q & A
 ]
 
-// ============================================================================
-// 📸 占位图清单（需要补充的截图）
-// ============================================================================
-// 
-// | 序号 | 文件路径                        | 内容描述                           |
-// |------|--------------------------------|-----------------------------------|
-// | 1    | slides/cover.png               | 门户首屏截图                        |
-// | 2    | slides/architecture.png        | 系统架构图                          |
-// | 3    | slides/dashboard_overview.png  | Dashboard 三视图总览                |
-// | 4    | slides/spatial_view.png        | 空间视图完整界面                    |
-// | 5    | slides/semantic_view.png       | 语义视图完整界面                    |
-// | 6    | slides/pose_view.png           | 姿态视图完整界面                    |
-// | 7    | slides/interaction_demo.gif    | 交互联动演示 GIF                    |
-// | 8    | slides/case1_spatial.png       | 案例1：car vs airplane 空间对比     |
-// | 9    | slides/case2_semantic.png      | 案例2：dining table 条件概率        |
-// | 10   | slides/case3_pose.png          | 案例3：关键点可见性骨架图            |
-//
-// ============================================================================
