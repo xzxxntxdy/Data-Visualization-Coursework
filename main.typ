@@ -39,19 +39,7 @@
   
   #v(1em)
   
-  // 📸 占位图：slides/cover.png - 门户首屏截图
-  #rect(
-    width: 70%,
-    height: 40%,
-    stroke: 1pt + gray,
-    fill: luma(240),
-  )[
-    #align(center + horizon)[
-      #text(fill: gray)[🖼️ 占位图：slides/cover.png]
-      
-      门户首屏截图
-    ]
-  ]
+
 ]
 
 // ============================================================================
