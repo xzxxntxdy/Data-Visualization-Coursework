@@ -1444,6 +1444,13 @@ function checkAndInit() {
         });
     }
     
+    // 监听 portal:handoff 事件，处理从 Portal 跳转过来的情况
+    document.addEventListener("portal:handoff", (e) => {
+        if (e.detail?.targetId === "spatial-view") {
+            setTimeout(initSpatialView, 100);
+        }
+    });
+    
     const spatialView = document.getElementById("spatial-view");
     if (spatialView?.classList.contains("active")) {
         initSpatialView();
