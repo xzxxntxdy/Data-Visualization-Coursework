@@ -63,11 +63,11 @@
             background-position: center;
             opacity: 0;
             transition: opacity 0.8s ease;
-            filter: grayscale(0.1) brightness(0.9); /* 比之前更亮一些 */
+            filter: grayscale(0.1) brightness(0.5);
         }
 
         .bg-frame.active {
-            opacity: 0.85;
+            opacity: 0.75;
         }
 
         .bg-frame[data-bg-frame="intro"] {
@@ -157,10 +157,7 @@
             min-height: 260px;
             border-radius: 14px;
             overflow: hidden;
-            /* 这里改成浅色半透明，而不是深色渐变，避免图像周围一圈黑 */
-            background: rgba(255, 255, 255, 0.18);
-            backdrop-filter: blur(18px) saturate(160%);
-            -webkit-backdrop-filter: blur(18px) saturate(160%);
+            background: transparent;
         }
 
 
@@ -245,6 +242,35 @@
             margin-top: 2px;
         }
 
+        .coco-info {
+            margin: 12px 0 0;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .coco-info h4 {
+            margin: 0 0 8px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #e0e7ff;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .coco-info p {
+            margin: 4px 0;
+            font-size: 11px;
+            line-height: 1.6;
+            color: #cbd5f5;
+        }
+
+        .coco-info .highlight {
+            color: #a5b4fc;
+            font-weight: 600;
+        }
+
         #story-scroll {
             background: rgba(255, 255, 255, 0.18);
             backdrop-filter: blur(24px) saturate(180%);
@@ -254,37 +280,187 @@
             padding: 14px 16px 16px;
             box-shadow: 0 14px 32px rgba(15, 23, 42, 0.35);
             box-sizing: border-box;
-            overflow-y: auto;
+            display: grid;
+            grid-template-rows: repeat(4, 1fr);
+            gap: 12px;
+            overflow: hidden;
         }
 
 
         .story-step {
             padding: 12px 10px 12px;
             border-radius: 12px;
-            margin-bottom: 10px;
             border: 1px solid transparent;
+            background: radial-gradient(circle at top left, rgba(99, 102, 241, 0.08), transparent 55%);
             transition: border-color 0.25s ease, background 0.25s ease, transform 0.25s ease;
+            cursor: pointer;
+            height: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            position: relative;
         }
 
+        .story-step-content {
+            flex: 0 0 66.666%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding-right: 10px;
+        }
+
+        .story-step-visual {
+            flex: 0 0 33.333%;
+            height: 80%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Scene 0: 图片图标 */
+        .story-step[data-state="intro"] .story-step-visual::before {
+            content: '📷';
+            font-size: 48px;
+            opacity: 0.8;
+        }
+
+        /* Scene 1: 空间定位 - 随机方块（大且重叠） */
+        .story-step[data-state="spatial"] .story-step-visual {
+            background: 
+                linear-gradient(rgba(99, 102, 241, 0.6), rgba(99, 102, 241, 0.6)) 20% 25% / 45px 38px no-repeat,
+                linear-gradient(rgba(34, 197, 94, 0.6), rgba(34, 197, 94, 0.6)) 55% 20% / 52px 42px no-repeat,
+                linear-gradient(rgba(245, 158, 11, 0.6), rgba(245, 158, 11, 0.6)) 40% 45% / 48px 35px no-repeat,
+                linear-gradient(rgba(239, 68, 68, 0.6), rgba(239, 68, 68, 0.6)) 65% 50% / 40px 44px no-repeat,
+                linear-gradient(rgba(168, 85, 247, 0.6), rgba(168, 85, 247, 0.6)) 30% 60% / 50px 36px no-repeat,
+                linear-gradient(rgba(14, 165, 233, 0.6), rgba(14, 165, 233, 0.6)) 70% 65% / 42px 40px no-repeat,
+                linear-gradient(rgba(236, 72, 153, 0.6), rgba(236, 72, 153, 0.6)) 45% 70% / 46px 38px no-repeat,
+                linear-gradient(rgba(132, 204, 22, 0.6), rgba(132, 204, 22, 0.6)) 15% 50% / 38px 42px no-repeat,
+                rgba(255, 255, 255, 0.05);
+        }
+
+/* Scene 2: 语义网络 - 三个球用线连接 (优化版) */
+.story-step[data-state="semantic"] .story-step-visual {
+    position: relative;
+    width: 100%; /* 确保容器有尺寸 */
+    height: 100%;
+}
+
+/* 1. 绘制连线 (位于底层) */
+.story-step[data-state="semantic"] .story-step-visual::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* 使用 SVG data URI 绘制连线。
+       M30 30 = 移动到 30% 30%
+       L70 30 = 连线到 70% 30%
+       L50 70 = 连线到 50% 70%
+       Z = 闭合路径 (回到起点)
+    */
+    background-image: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 30 L70 30 L50 70 Z' fill='none' stroke='rgba(99, 102, 241, 0.7)' stroke-width='2'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 100% 100%;
+    z-index: 1; /* 确保线在球下面 */
+}
+
+
+/* 2. 绘制三个小球 (位于顶层) */
+.story-step[data-state="semantic"] .story-step-visual::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2; /* 盖住连线的端头 */
+    
+    /* 三个球的位置与上面的 SVG 坐标 (30,30), (70,30), (50,70) 完美对应 
+       注意：为了边缘平滑，transparent 从 14px 改为 15px (简单的抗锯齿处理)
+    */
+    background: 
+        radial-gradient(circle, #6366f1 0, #6366f1 14px, transparent 15px) 30% 27% / 30px 30px no-repeat,
+        radial-gradient(circle, #6366f1 0, #6366f1 14px, transparent 15px) 70% 27% / 30px 30px no-repeat,
+        radial-gradient(circle, #6366f1 0, #6366f1 14px, transparent 15px) 50% 70% / 30px 30px no-repeat;
+}
+
+.story-step[data-state="pose"] .story-step-visual {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: none;
+    /* 可选：添加一个浅色网格背景以便更好地观察，不需要可删除 */
+    /* background-image: linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px);
+    background-size: 20px 20px; */
+}
+/* Scene 3: 姿态骨架 - 细线圆点版 */
+.story-step[data-state="pose"] .story-step-visual {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.story-step[data-state="pose"] .story-step-visual::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+
+    /* 关键修改：
+       1. 骨架线条 (第一个 g 标签): stroke-width='1.5' (原为 3)
+       2. 关节圆点 (第二个 g 标签): r='10' (原为 2.2), stroke-width='1.5' (增加白色描边厚度，增加层次感)
+    */
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg stroke='%234a5568' stroke-width='1.5' stroke-linecap='round' fill='none'%3E%3C!-- 躯干 --%3E%3Cline x1='35' y1='20' x2='65' y2='20' /%3E%3Cline x1='40' y1='60' x2='60' y2='60' /%3E%3Cline x1='35' y1='20' x2='40' y2='60' /%3E%3Cline x1='65' y1='20' x2='60' y2='60' /%3E%3C!-- 头部连接 --%3E%3Cline x1='35' y1='20' x2='47' y2='7' /%3E%3Cline x1='65' y1='20' x2='53' y2='7' /%3E%3Cline x1='47' y1='7' x2='50' y2='5' /%3E%3Cline x1='53' y1='7' x2='50' y2='5' /%3E%3Cline x1='47' y1='7' x2='50' y2='11' /%3E%3Cline x1='53' y1='7' x2='50' y2='11' /%3E%3C!-- 手臂 --%3E%3Cline x1='35' y1='20' x2='23' y2='40' /%3E%3Cline x1='23' y1='40' x2='30' y2='52' /%3E%3Cline x1='65' y1='20' x2='77' y2='40' /%3E%3Cline x1='77' y1='40' x2='70' y2='52' /%3E%3C!-- 腿部 --%3E%3Cline x1='40' y1='60' x2='43' y2='78' /%3E%3Cline x1='43' y1='78' x2='45' y2='95' /%3E%3Cline x1='60' y1='60' x2='57' y2='78' /%3E%3Cline x1='57' y1='78' x2='55' y2='95' /%3E%3C/g%3E%3C!-- 2. 关节圆点 (圆圈更明显) --%3E%3Cg r='10' stroke='white' stroke-width='1.5'%3E%3C!-- 头部 --%3E%3Ccircle cx='50' cy='5' fill='orange' /%3E%3Ccircle cx='47' cy='7' fill='%2300ff00' /%3E%3Ccircle cx='53' cy='7' fill='%23aaff00' /%3E%3Ccircle cx='50' cy='11' fill='%23ff0055' /%3E%3C!-- 肩部 --%3E%3Ccircle cx='35' cy='20' fill='cyan' /%3E%3Ccircle cx='65' cy='20' fill='cyan' /%3E%3C!-- 肘部 --%3E%3Ccircle cx='23' cy='40' fill='%236600ff' /%3E%3Ccircle cx='77' cy='40' fill='%230066ff' /%3E%3C!-- 手腕 --%3E%3Ccircle cx='30' cy='52' fill='%23ff00cc' /%3E%3Ccircle cx='70' cy='52' fill='%23aa00ff' /%3E%3C!-- 髋部 --%3E%3Ccircle cx='40' cy='60' fill='red' /%3E%3Ccircle cx='60' cy='60' fill='%23ff00cc' /%3E%3C!-- 膝盖 --%3E%3Ccircle cx='43' cy='78' fill='blue' /%3E%3Ccircle cx='57' cy='78' fill='lime' /%3E%3C!-- 脚踝 --%3E%3Ccircle cx='45' cy='95' fill='orange' /%3E%3Ccircle cx='55' cy='95' fill='yellow' /%3E%3C/g%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain; 
+}
         .story-step h3 {
-            margin: 0 0 4px;
-            font-size: 13px;
-            letter-spacing: 0.18em;
+            margin: 0 0 6px;
+            font-size: 18px;
+            letter-spacing: 0.2em;
             text-transform: uppercase;
-            color: #a5b4fc;
+            color: #c7d2fe;
+            font-weight: 800;
+            text-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
         }
 
         .story-step h2 {
-            margin: 2px 0 6px;
-            font-size: 16px;
-            color: #e5e7eb;
+            margin: 2px 0 8px;
+            font-size: 24px;
+            color: #f1f5f9;
+            font-weight: 700;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
 
         .story-step p {
             margin: 3px 0;
-            font-size: 12px;
-            color: #cbd5f5;
+            font-size: 13px;
+            color: #e0e7ff;
             line-height: 1.6;
+        }
+
+        .story-step p small {
+            font-size: 12px;
+            color: #c7d2fe;
+            font-weight: 600;
+        }
+
+        .story-step:hover {
+            border-color: #6366f1;
+            background: radial-gradient(circle at top left, rgba(99, 102, 241, 0.15), transparent 55%);
+            transform: translateY(-2px);
         }
 
         .story-step.active {
@@ -298,80 +474,7 @@
             color: #9ca3af;
         }
 
-        .handoff-grid {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 10px;
-            margin-top: 10px;
-        }
 
-        @media (max-width: 900px) {
-            .handoff-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .portal-card {
-            border-radius: 12px;
-            border: 1px solid rgba(148, 163, 184, 0.6);
-            background: radial-gradient(circle at top, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.96));
-            padding: 10px 10px 11px;
-            text-align: left;
-            cursor: pointer;
-            color: inherit;
-            font: inherit;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
-        }
-
-        .portal-card:hover {
-            transform: translateY(-2px);
-            border-color: #6366f1;
-            box-shadow: 0 16px 32px rgba(15, 23, 42, 0.8);
-        }
-
-        .portal-card-title {
-            font-size: 13px;
-            font-weight: 600;
-            color: #e5e7eb;
-        }
-
-        .portal-card-desc {
-            font-size: 11px;
-            color: #cbd5f5;
-        }
-
-        .portal-card-tag {
-            margin-top: 4px;
-            font-size: 10px;
-            color: #a5b4fc;
-            text-transform: uppercase;
-            letter-spacing: 0.16em;
-        }
-
-        .portal-cta {
-            margin-top: 12px;
-            padding: 10px 18px;
-            border-radius: 999px;
-            border: none;
-            background: linear-gradient(to right, #6366f1, #22c55e);
-            color: #ffffff;
-            font-size: 12px;
-            font-weight: 600;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            box-shadow: 0 15px 40px rgba(79, 70, 229, 0.6);
-        }
-
-        .portal-cta span.arrow {
-            font-size: 14px;
-        }
 
         #aggregate-flash {
             position: absolute;
@@ -815,65 +918,56 @@
                 </div>
 
                 <ul class="hero-captions" id="hero-captions"></ul>
+
+                <div class="coco-info">
+                    <h4>📊 关于 COCO 数据集</h4>
+                    <p><span class="highlight">COCO (Common Objects in Context)</span> 是目前最广泛使用的大规模物体检测、分割和关键点检测数据集。</p>
+                    <p>• 包含 <span class="highlight">330K+ 图像</span>，涵盖 <span class="highlight">80 个类别</span></p>
+                    <p>• 提供 <span class="highlight">150 万+</span> 物体实例标注</p>
+                    <p>• 支持物体检测、实例分割、关键点检测、全景分割等多种任务</p>
+                    <p>• 被广泛应用于计算机视觉研究与工业应用中</p>
+                </div>
             </section>
 
             <section id="story-scroll">
-                <article class="story-step" data-state="intro">
-                    <h3>SCENE 0 · SAMPLE INJECTION</h3>
-                    <h2>样本载入：一张图的旅程</h2>
-                    <p>这一刻，只有一张图片 —— 户外聚餐的场景被送入视觉系统。</p>
-                    <p>Portal 提醒你：任何一个宏观统计视图，都可以追溯到一张具体原图。</p>
-                    <p><small>提示：在左侧舞台滚轮或在此区域滚动，浏览各个分析阶段。</small></p>
-                </article>
-
-                <article class="story-step" data-state="spatial">
-                    <h3>SCENE 1 · OBJECT LOCALIZATION</h3>
-                    <h2>空间定界：从像素到边界框</h2>
-                    <p>机器认知的起点，是给世界画出边界。在这一张样本图像中，算法定位出 <strong>52 个实例</strong>。</p>
-                    <p>同样的过程被复制到整个 COCO 数据集，超 <strong>860,000</strong> 个实例被写入空间索引。</p>
-                </article>
-
-                <article class="story-step" data-state="semantic">
-                    <h3>SCENE 2 · CONTEXTUAL LOGIC</h3>
-                    <h2>语义编织：物体之间的关系网络</h2>
-                    <p>餐桌定义盘子，人定义椅子。单个物体在上下文中才有意义。</p>
-                    <p>我们构建 80 个类别的语义图，并扩展到全量共现矩阵。</p>
-                </article>
-
-                <article class="story-step" data-state="pose">
-                    <h3>SCENE 3 · BIOLOGICAL STRUCTURE</h3>
-                    <h2>姿态透视：穿透表象的骨架</h2>
-                    <p>从 RGB 穿透到骨架，对每个人体预测 17 个关键点并连成 COCO 标准骨架。</p>
-                    <p>超过 250,000 个人体被解析，用于研究可见性与动作模式。</p>
-                </article>
-
-                <article class="story-step" data-state="handoff">
-                    <h3>SCENE 4 · PORTAL HANDOFF</h3>
-                    <h2>从 1 到 123,287：跳转到全量视角</h2>
-                    <p>你已经体验了“一张图”的完整处理路径，现在将视野放大到 123,287 张图像。</p>
-                    <p>下面卡片分别对应不同 Dashboard 视角，可随时再回到这个样本 Portal。</p>
-
-                    <div class="handoff-grid">
-                        <button class="portal-card" type="button" data-launch-target="spatial-view">
-                            <div class="portal-card-tag">SPATIAL VIEW</div>
-                            <div class="portal-card-title">Spatial Dashboard</div>
-                            <div class="portal-card-desc">探索 123,287 张图片中的目标位置分布与尺度差异。</div>
-                        </button>
-                        <button class="portal-card" type="button" data-launch-target="semantic-view">
-                            <div class="portal-card-tag">SEMANTIC VIEW</div>
-                            <div class="portal-card-title">Semantic Dashboard</div>
-                            <div class="portal-card-desc">可视化 80 个类别的共现网络，观察语义偏好。</div>
-                        </button>
-                        <button class="portal-card" type="button" data-launch-target="pose-view">
-                            <div class="portal-card-tag">POSE VIEW</div>
-                            <div class="portal-card-title">Pose Dashboard</div>
-                            <div class="portal-card-desc">分析 25 万人体的 17 个关键点，理解姿态模式。</div>
-                        </button>
+                <article class="story-step" data-state="intro" data-launch-target="intro">
+                    <div class="story-step-content">
+                        <h3>SCENE 0 · SAMPLE INJECTION</h3>
+                        <h2>样本载入：一张图的旅程</h2>
+                        <p>这一刻，只有一张图片 —— 户外聚餐的场景被送入视觉系统。</p>
+                        <p><small>点击查看样本详情</small></p>
                     </div>
+                    <div class="story-step-visual"></div>
+                </article>
 
-                    <button id="cta-button" class="portal-cta" type="button">
-                        一键进入语义 Dashboard <span class="arrow">↗</span>
-                    </button>
+                <article class="story-step" data-state="spatial" data-launch-target="spatial-view">
+                    <div class="story-step-content">
+                        <h3>SCENE 1 · OBJECT LOCALIZATION</h3>
+                        <h2>空间定界：从像素到边界框</h2>
+                        <p>机器认知的起点，是给世界画出边界。在这一张样本图像中，算法定位出 <strong>52 个实例</strong>。</p>
+                        <p><small>点击进入空间分析 Dashboard →</small></p>
+                    </div>
+                    <div class="story-step-visual"></div>
+                </article>
+
+                <article class="story-step" data-state="semantic" data-launch-target="semantic-view">
+                    <div class="story-step-content">
+                        <h3>SCENE 2 · CONTEXTUAL LOGIC</h3>
+                        <h2>语义编织：物体之间的关系网络</h2>
+                        <p>餐桌定义盘子，人定义椅子。单个物体在上下文中才有意义。</p>
+                        <p><small>点击进入语义分析 Dashboard →</small></p>
+                    </div>
+                    <div class="story-step-visual"></div>
+                </article>
+
+                <article class="story-step" data-state="pose" data-launch-target="pose-view">
+                    <div class="story-step-content">
+                        <h3>SCENE 3 · BIOLOGICAL STRUCTURE</h3>
+                        <h2>姿态透视：穿透表象的骨架</h2>
+                        <p>从 RGB 穿透到骨架，对每个人体预测 17 个关键点并连成 COCO 标准骨架。</p>
+                        <p><small>点击进入姿态分析 Dashboard →</small></p>
+                    </div>
+                    <div class="story-step-visual"></div>
                 </article>
             </section>
         </div>
