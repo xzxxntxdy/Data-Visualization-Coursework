@@ -254,15 +254,35 @@ function setupObserver() {
 
 /**
  * Portal → Dashboard 的跳转（handoff）
+ * 修改：第一次点击切换到对应场景，第二次点击才跳转（intro 除外）
  */
 function bindHandoff() {
     const launchers = Array.from(
         document.querySelectorAll("[data-launch-target]")
     );
     launchers.forEach((btn) => {
-        btn.addEventListener("click", () =>
-            triggerHandoff(btn.dataset.launchTarget || "semantic-view")
-        );
+        btn.addEventListener("click", () => {
+            const targetState = btn.dataset.state; // 获取场景状态
+            const launchTarget = btn.dataset.launchTarget;
+            
+            // intro 场景只切换，不跳转
+            if (targetState === "intro") {
+                if (state.current !== targetState) {
+                    renderState(targetState);
+                    state.current = targetState;
+                }
+                return; // intro 不执行跳转
+            }
+            
+            // 如果当前场景不是目标场景，先切换场景
+            if (state.current !== targetState) {
+                renderState(targetState);
+                state.current = targetState;
+            } else {
+                // 如果已经是当前场景，则执行跳转
+                triggerHandoff(launchTarget || "semantic-view");
+            }
+        });
     });
 
     if (ctaButton) {
