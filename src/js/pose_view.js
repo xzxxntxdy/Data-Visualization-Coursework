@@ -259,6 +259,68 @@ function getStylesHTML() {
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
+        /* 辅助功能按钮（置顶居中） */
+        .assist-toggle {
+            position: absolute;
+            top: -10px;          /* 稍微向上漂浮 */
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 120;
+
+            padding: 6px 16px;
+            font-size: 12px;
+            border-radius: 999px;
+
+            border: 1px solid #94a3b8;
+            background: #ffffff;
+            cursor: pointer;
+
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.15);
+            transition: all 0.2s ease;
+            color: #1e293b;
+        }
+
+        .assist-toggle:hover {
+            background: #f1f5f9;
+        }
+
+        .assist-toggle.open .chevron {
+            transform: rotate(180deg);
+        }
+
+        /* 折叠面板动画 */
+        .control-panel {
+            position: absolute;
+            top: 35px;           /* 放在按钮下方 */
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 110;
+
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+
+            padding: 14px 16px;
+            min-width: 200px;
+
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+
+        .control-panel.is-collapsed {
+            opacity: 0;
+            transform: translate(-50%, -10px);
+            pointer-events: none;
+        }
+
+        .control-panel.is-open {
+            opacity: 1;
+            transform: translate(-50%, 0px);
+            pointer-events: auto;
+        }
     `;
 }
 
@@ -327,44 +389,60 @@ function processData() {
 // ═══════════════════════════════════════════════════════════════════
 
 function initControlPanel(root, keypoints) {
-    const partButtons = root.getElementById('part-buttons');
-    const symmetryBtn = root.getElementById('toggle-symmetry');
+    const partButtons   = root.getElementById('part-buttons');
+    const symmetryBtn   = root.getElementById('toggle-symmetry');
     const trajectoryBtn = root.getElementById('toggle-trajectory');
-    
-    // 创建部位按钮
+
+    const panel     = root.getElementById('control-panel');
+    const assistBtn = root.getElementById('assist-toggle');
+
+    /* --- 折叠/展开逻辑 --- */
+    if (assistBtn && panel) {
+        assistBtn.onclick = () => {
+            const collapsed = panel.classList.contains("is-collapsed");
+
+            panel.classList.toggle("is-collapsed", !collapsed);
+            panel.classList.toggle("is-open", collapsed);
+            assistBtn.classList.toggle("open", collapsed);
+        };
+    }
+
+    /* --- 部位按钮 --- */
     Object.entries(BODY_PARTS).forEach(([key, part]) => {
         const btn = document.createElement('button');
         btn.className = 'part-btn';
         btn.textContent = part.name;
+
         btn.onclick = () => {
             if (activeBodyPart === key) {
                 activeBodyPart = null;
                 btn.classList.remove('active');
             } else {
-                // 清除其他按钮的激活状态
-                partButtons.querySelectorAll('.part-btn').forEach(b => b.classList.remove('active'));
+                partButtons.querySelectorAll('.part-btn')
+                    .forEach(b => b.classList.remove('active'));
                 activeBodyPart = key;
                 btn.classList.add('active');
             }
             EventBus.emit('bodyPartChanged', activeBodyPart);
         };
+
         partButtons.appendChild(btn);
     });
-    
-    // 对称性分析按钮
+
+    /* --- 高级功能 --- */
     symmetryBtn.onclick = () => {
         showSymmetry = !showSymmetry;
         symmetryBtn.classList.toggle('active', showSymmetry);
         EventBus.emit('symmetryChanged', showSymmetry);
     };
-    
-    // 轨迹动画按钮
+
     trajectoryBtn.onclick = () => {
         showTrajectory = !showTrajectory;
         trajectoryBtn.classList.toggle('active', showTrajectory);
         EventBus.emit('trajectoryChanged', showTrajectory);
     };
 }
+
 
 // ═══════════════════════════════════════════════════════════════════
 // 🎨 Main Render
@@ -385,18 +463,30 @@ function render() {
                 <div class="sv2-title">人体节点分析</div>
                 <div class="sv2-subtitle">节点 · 1σ/3σ边界 · 交互探索</div>
                 <div id="view-skeleton" class="sv2-chart-area">
-                    <div class="control-panel">
+
+                    <!-- ★ 顶部正中间的辅助功能按钮 -->
+                    <button class="assist-toggle" id="assist-toggle">
+                        辅助功能 <span class="chevron">▾</span>
+                    </button>
+
+                    <!-- ★ 折叠面板 -->
+                    <div class="control-panel is-collapsed" id="control-panel">
                         <div class="control-group">
                             <label class="control-label">部位高亮</label>
                             <div class="control-buttons" id="part-buttons"></div>
                         </div>
+
                         <div class="control-group">
                             <label class="control-label">高级功能</label>
                             <button class="toggle-btn" id="toggle-symmetry">对称性分析</button>
-                            <button class="toggle-btn" id="toggle-trajectory" style="margin-top:4px;">运动轨迹</button>
+                            <button class="toggle-btn" id="toggle-trajectory" style="margin-top:4px;">
+                                运动轨迹
+                            </button>
                         </div>
                     </div>
+
                 </div>
+
             </div>
             <div class="sv2-card">
                 <div class="sv2-title">可见性环形展示</div>

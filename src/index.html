@@ -248,7 +248,29 @@
             border-radius: 10px;
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.15);
+
+            /* 新增：左右排版 */
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
         }
+
+        .coco-info-text {
+            flex: 1 1 auto;
+        }
+
+        .coco-info-thumb {
+            flex: 0 0 auto;
+        }
+
+        .coco-info-thumb img {
+            display: block;
+            max-width: 180px;          /* 你可以根据视觉再调，比如 160/200 */
+            border-radius: 8px;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.45);
+            object-fit: cover;
+        }
+
 
         .coco-info h4 {
             margin: 0 0 8px;
@@ -455,6 +477,21 @@
             font-size: 12px;
             color: #c7d2fe;
             font-weight: 600;
+
+            /* 新增：让 small 看起来像可点击的小按钮 */
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.85);   /* 稍微亮一点的边框 */
+            background: rgba(15, 23, 42, 0.65);            /* 深色底 */
+            cursor: pointer;
+            transition: all 0.18s ease;
+        }
+
+        .story-step p small:hover {
+            border-color: #6366f1;
+            background: rgba(79, 70, 229, 0.35);
+            box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.4);
         }
 
         .story-step:hover {
@@ -599,10 +636,27 @@
         }
 
         .view-area {
+            position: relative;
+            flex: 1;
+            display: block;
+            min-height: 0;
+        }
+
+        .view {
+            position: absolute;
+            inset: 0;
             display: flex;
             flex-direction: column;
-            gap: 16px;
-            min-height: 0;
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(1);
+            transition: opacity 0.2s ease;
+        }
+
+
+        .view.active {
+            opacity: 1;
+            pointer-events: auto;
         }
 
         .panel {
@@ -630,17 +684,6 @@
             font-weight: 700;
             color: var(--text-main);
             letter-spacing: -0.5px;
-        }
-
-        .view {
-            display: none;
-            flex: 1;
-            min-height: 0;
-        }
-        .view.active {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
         }
 
         .semantic-panel {
@@ -862,6 +905,18 @@
             padding: 6px;
             border-radius: 10px;
         }
+        #sample-info .info-card {
+            width: auto;
+            max-width: 80vw;
+            max-height: none;
+            overflow: visible;
+        }
+
+        #sample-info .zoom-wrap {
+            width: auto;
+            max-width: 100%;
+            overflow: hidden;
+        }
 
     </style>
 </head>
@@ -885,7 +940,7 @@
                     </div>
                     <div class="hero-status">
                         <div>SYSTEM STATUS: <span>INITIALIZING…</span></div>
-                        <div>INPUT SOURCE: COCO 2017 VAL SET</div>
+                        <div>INPUT SOURCE: COCO 2017 Train SET</div>
                         <div>CURRENT SAMPLE ID: <strong>457718</strong></div>
                     </div>
                 </div>
@@ -919,7 +974,9 @@
 
                 <ul class="hero-captions" id="hero-captions"></ul>
 
-                <div class="coco-info">
+            <div class="coco-info">
+                <!-- 左侧文字 -->
+                <div class="coco-info-text">
                     <h4>📊 关于 COCO 数据集</h4>
                     <p><span class="highlight">COCO (Common Objects in Context)</span> 是目前最广泛使用的大规模物体检测、分割和关键点检测数据集。</p>
                     <p>• 包含 <span class="highlight">330K+ 图像</span>，涵盖 <span class="highlight">80 个类别</span></p>
@@ -927,6 +984,13 @@
                     <p>• 支持物体检测、实例分割、关键点检测、全景分割等多种任务</p>
                     <p>• 被广泛应用于计算机视觉研究与工业应用中</p>
                 </div>
+
+                <!-- 右侧 overview 图 -->
+                <div class="coco-info-thumb">
+                    <img src="./data/overview.jpg" alt="COCO 数据集概览">
+                </div>
+            </div>
+
             </section>
 
             <section id="story-scroll">
@@ -935,7 +999,9 @@
                         <h3>SCENE 0 · SAMPLE INJECTION</h3>
                         <h2>样本载入：一张图的旅程</h2>
                         <p>这一刻，只有一张图片 —— 户外聚餐的场景被送入视觉系统。</p>
-                        <p><small>点击查看样本详情</small></p>
+                        <p>
+                            <small class="sample-detail-trigger">点击查看样本详情</small>
+                        </p>
                     </div>
                     <div class="story-step-visual"></div>
                 </article>
@@ -988,11 +1054,11 @@
             </button>
             
             <div class="nav-group">
-                <button class="nav-item active" data-target="semantic-view">
-                    <span>语义共现网络</span>
-                </button>
-                <button class="nav-item" data-target="spatial-view">
+                <button class="nav-item active" data-target="spatial-view">
                     <span>空间 / 尺度视图</span>
+                </button>
+                <button class="nav-item" data-target="semantic-view">
+                    <span>语义共现网络</span>
                 </button>
                 <button class="nav-item" data-target="pose-view">
                     <span>姿态 / 骨架视图</span>
@@ -1004,9 +1070,25 @@
             <div class="header">
                 <h1>COCO-Verse 多视图分析</h1>
             </div>
+            
+            <!-- 空间视图 -->
+            <section class="view active" id="spatial-view">
+                <section class="panel spatial-panel" style="height:100%;">
+                    <div class="panel-head">
+                        <div>
+                            <h1>空间与尺度分析</h1>
+                            <p>探索物体在图像中的位置分布与尺度特征</p>
+                        </div>
+                        <div class="head-actions">
+                            <div class="tag">Spatial Analysis</div>
+                        </div>
+                    </div>
+                    <div id="spatial-content" style="flex:1; min-height:0; overflow:hidden;"></div>
+                </section>
+            </section>
 
             <!-- 语义视图（原样保留） -->
-            <section class="view active" id="semantic-view">
+            <section class="view" id="semantic-view">
                 <section class="panel semantic-panel">
                     <div class="panel-head">
                         <div>
@@ -1061,22 +1143,6 @@
                 </section>
             </section>
 
-            <!-- 空间视图 -->
-            <section class="view" id="spatial-view">
-                <section class="panel spatial-panel" style="height:100%;">
-                    <div class="panel-head">
-                        <div>
-                            <h1>空间与尺度分析</h1>
-                            <p>探索物体在图像中的位置分布与尺度特征</p>
-                        </div>
-                        <div class="head-actions">
-                            <div class="tag">Spatial Analysis</div>
-                        </div>
-                    </div>
-                    <div id="spatial-content" style="flex:1; min-height:0; overflow:hidden;"></div>
-                </section>
-            </section>
-
             <!-- 姿态视图 -->
             <section class="view" id="pose-view">
                 <section class="panel spatial-panel" style="height:100%;">
@@ -1116,6 +1182,106 @@
                 <img class="modal-image zoomable" src="./icon/cond_matrix.png" alt="条件概率矩阵">
             </div>
             <button class="info-close" data-close="matrix-info">关闭</button>
+        </div>
+    </div>
+
+    <div class="info-modal" id="sample-info">
+        <div class="info-card"
+            style="
+                background: rgba(255, 255, 255, 0.12);
+                backdrop-filter: blur(22px) saturate(180%);
+                -webkit-backdrop-filter: blur(22px) saturate(180%);
+                border: 1px solid rgba(255, 255, 255, 0.28);
+                border-radius: 16px;
+                padding: 24px;
+                color: #e5e7eb;
+                width: min(900px, 90vw);
+                box-shadow: 0 20px 50px rgba(0,0,0,0.55);
+            "
+        >
+            <h3 style="margin:0 0 10px; font-size:20px; font-weight:700; color:#f1f5f9;">
+                样本 #457718 详细信息
+            </h3>
+
+            <p style="margin:4px 0 14px; color:#cbd5e1; font-size:13px;">
+                以下内容基于该样本在 COCO 数据集中的标注信息。
+            </p>
+
+            <div class="zoom-wrap"
+                style="
+                    background: rgba(255,255,255,0.05);
+                    padding: 14px;
+                    border-radius: 12px;
+                    border: 1px solid rgba(255,255,255,0.12);
+                    overflow: hidden;
+                "
+            >
+                <div style="display:flex; gap:20px; align-items:flex-start;">
+
+                    <!-- 左侧图片 -->
+                    <div style="flex:0 0 auto;">
+                        <img src="./data/hero_image.jpg"
+                            style="
+                                display:block;
+                                max-width:360px;
+                                border-radius:12px;
+                                box-shadow:0 10px 30px rgba(0,0,0,0.45);
+                            "
+                        >
+                        <div style="margin-top:10px; font-size:12px; color:#cbd5e1;">
+                            图像分辨率：<strong style="color:#a5b4fc;">640 × 426</strong>
+                        </div>
+                    </div>
+
+                    <!-- 右侧信息 -->
+                    <div style="flex:1; font-size:13px; line-height:1.65; color:#e2e8f0; ">
+
+                        <h4 style="margin:0 0 6px; font-size:14px; font-weight:700; color:#f1f5f9;">
+                            📝 Captions
+                        </h4>
+                        <ul style="margin:0 0 14px 18px; padding:0; color:#cbd5e1;">
+                            <li>A man is smiling genuinely and brightly at the people at his table.</li>
+                            <li>a group of people sitting at a table</li>
+                            <li>The man talking to an elderly man is having a meal with two children.</li>
+                            <li>A group of people sitting at a table.</li>
+                            <li>Folks enjoying a meal in outdoor setting with a beautiful view</li>
+                        </ul>
+
+                        <h4 style="margin:0 0 6px; font-size:14px; font-weight:700; color:#f1f5f9;">
+                            📦 检测统计
+                        </h4>
+                        <p style="margin:0 0 10px; color:#cbd5e1;">
+                            • 检测框总数：<strong style="color:#a5b4fc;">52 个</strong><br>
+                            • 姿态关键点实例：<strong style="color:#a5b4fc;">6 套骨架</strong>
+                        </p>
+
+                        <h4 style="margin:0 0 6px; font-size:14px; font-weight:700; color:#f1f5f9;">
+                            🏷️ 出现的类别
+                        </h4>
+                        <p style="margin:0; color:#cbd5e1;">
+                            fork, chair, knife, bowl, person, spoon, wine glass, cell phone, umbrella, dining table
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <button class="info-close"
+                    data-close="sample-info"
+                    style="
+                        margin-top:16px;
+                        padding:10px 16px;
+                        border-radius:10px;
+                        background:#6366f1;
+                        color:white;
+                        border:none;
+                        cursor:pointer;
+                        font-size:13px;
+                        font-weight:600;
+                        box-shadow:0 6px 16px rgba(99,102,241,0.45);
+                    "
+            >
+                关闭
+            </button>
         </div>
     </div>
 
@@ -1164,6 +1330,40 @@
         semanticBarIcon?.addEventListener('click', () => openModal('bar-info'));
         semanticMatrixIcon?.addEventListener('click', () => openModal('matrix-info'));
         wireModalClose();
+
+        // 绑定“点击查看样本详情”
+        const sampleDetailTrigger = document.querySelector('.sample-detail-trigger');
+        if (sampleDetailTrigger) {
+            // 让鼠标形状也是手型
+            sampleDetailTrigger.style.cursor = 'pointer';
+            sampleDetailTrigger.addEventListener('click', (e) => {
+                e.stopPropagation();          // 防止冒泡影响整个卡片的滚动/切换
+                openModal('sample-info');
+            });
+        }
+
+        // 绑定后三个 Scene 的「点击进入 xxx Dashboard →」小按钮
+        const sceneCtaSmalls = document.querySelectorAll(
+            '#story-scroll .story-step:not([data-state="intro"]) p small'
+        );
+
+        sceneCtaSmalls.forEach((smallEl) => {
+            smallEl.addEventListener('click', (e) => {
+                e.stopPropagation(); // ✅ 阻止事件冒泡到 .story-step 上
+
+                const article = smallEl.closest('.story-step');
+                if (!article) return;
+
+                const launchTarget = article.dataset.launchTarget || 'semantic-view';
+
+                // 直接触发 Portal → Dashboard 的切换
+                document.dispatchEvent(
+                    new CustomEvent('portal:handoff', {
+                        detail: { targetId: launchTarget }
+                    })
+                );
+            });
+        });
 
         const makeZoomable = (wrap) => {
             if (!wrap) return;
