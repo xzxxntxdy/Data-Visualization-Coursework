@@ -16,10 +16,12 @@
   ),
 )
 
-
-
-
-
+#set text(
+  font: (
+    "Noto Sans CJK SC",
+    "Fira Code",
+  ),
+)
 
 // = 作为文档标题，== 开始真正的 slide
 
@@ -39,7 +41,6 @@
   
   #v(1em)
   
-
 ]
 
 // ============================================================================
@@ -155,55 +156,92 @@
 // ============================================================================
 == 数据处理流程
 
-#align(center)[
+#align(center + horizon)[
   #grid(
-    columns: (1fr, auto, 1fr, auto, 1fr),
+    // 关键点1：使用 1fr 强制三列等宽，限制盒子的最大宽度
+    columns: (1fr, auto, 1fr, auto, 1fr), 
     column-gutter: 0.5em,
     row-gutter: 1em,
+    
+    // --- 第 1 列 ---
     [
       #rect(
+        width: 100%, // 关键点2：盒子填满列宽
         fill: rgb("#f0f9ff"),
         radius: 8pt,
         inset: 0.8em,
       )[
-        *原始数据*
+        // 标题保持原有大小
+        #text(weight: "bold")[原始数据]
         
-        - instances\_train2017.json
-        - person\_keypoints\_train2017.json
+        #v(0.5em)
+        #set text(size: 0.7em) // 关键点3：全局缩小列表文字
+        #set par(leading: 0.4em) // 缩小行间距
         
-        #text(size: 0.8em, fill: gray)[~19GB]
+        - COCO 图像集
+        - instances_train2017.json
+        // 单独处理超长文件名，强制换行
+        - person_keypoints\_ \ train2017.json
+        
+        #v(0.5em)
+        #text(size: 0.9em, fill: gray)[~19GB]
       ]
     ],
-    [→],
+    
+    // --- 箭头 ---
+    [#align(center + horizon)[→]],
+    
+    // --- 第 2 列 ---
     [
       #rect(
+        width: 100%,
         fill: rgb("#fefce8"),
         radius: 8pt,
         inset: 0.8em,
       )[
-        *Python 预处理*
+        #text(weight: "bold")[Python 预处理]
         
-        - process\_spatial.py
-        - process\_semantic.py
-        - process\_pose.py
+        #v(0.5em)
+        #set text(size: 0.7em) 
+        #set par(leading: 0.4em)
         
-        #text(size: 0.8em, fill: gray)[采样 + 聚合]
+        - find_image.py
+        - save_overview.py
+        - process_spatial.py
+        - process_semantic.py
+        - process_pose.py
+        
+        #v(0.5em)
+        #text(size: 0.9em, fill: gray)[采样 + 聚合]
       ]
     ],
-    [→],
+    
+    // --- 箭头 ---
+    [#align(center + horizon)[→]],
+    
+    // --- 第 3 列 ---
     [
       #rect(
+        width: 100%,
         fill: rgb("#f0fdf4"),
         radius: 8pt,
         inset: 0.8em,
       )[
-        *前端 JSON*
+        #text(weight: "bold")[前端资源]
         
-        - spatial\_data.json
-        - semantic\_data.json
-        - pose\_stats.json
+        #v(0.5em)
+        #set text(size: 0.7em)
+        #set par(leading: 0.4em)
         
-        #text(size: 0.8em, fill: gray)[~3MB]
+        - hero_image.jpg
+        - overview.jpg
+        - hero_data.json
+        - spatial_data.json
+        - semantic_data.json
+        - pose_stats.json
+        
+        #v(0.5em)
+        #text(size: 0.9em, fill: gray)[~3MB]
       ]
     ],
   )
@@ -211,10 +249,14 @@
 
 #v(1em)
 
-*数据转换要点*：
-- *空间采样*：从 860K 标注中随机采样 8,000 条，保持类别比例
-- *共现矩阵*：计算 80×80 的共现计数与条件概率
-- *姿态聚合*：统计 17 个关键点的可见/不可见/标注概率
+#text(size: 0.9em)[
+  *数据转换要点*：
+  - *门户资源*：筛选最佳 Hero Image 并生成概览拼图
+  - *空间采样*：从 860K 标注中采样 8,000 条
+  - *共现矩阵*：计算 80×80 条件概率
+  - *姿态聚合*：统计 17 个关键点的可见/不可见/标注概率
+]
+
 
 // ============================================================================
 // 系统架构
@@ -242,9 +284,9 @@
       
       - 等高线密度热力图
       - 位置×尺度散点图
-      - 类别尺度分布条形图
+      - 类别尺度分布图
       
-      #text(size: 0.9em, fill: gray)[
+      #text(size: 0.8em, fill: gray)[
         回答：物体在哪里？多大？
       ]
     ]
@@ -261,7 +303,7 @@
       - 条件概率侧边栏
       - 共现阈值滑块
       
-      #text(size: 0.9em, fill: gray)[
+      #text(size: 0.8em, fill: gray)[
         回答：物体和谁一起？
       ]
     ]
@@ -278,7 +320,7 @@
       - 关键点环形统计
       - 场景过滤器
       
-      #text(size: 0.9em, fill: gray)[
+      #text(size: 0.8em, fill: gray)[
         回答：人在做什么？
       ]
     ]
@@ -298,7 +340,7 @@
 
 #grid(
   columns: (1fr, 1fr),
-  column-gutter: 2em,
+  column-gutter: 1em,
   [
     === 可视映射
     
@@ -317,7 +359,7 @@
     
     === 设计决策
     
-    - *等高线*：相比热力图更清晰展示密度梯度
+    - *等高线*：清晰展示密度梯度
     - *对数刻度*：缓解尺度极值差异
     - *三色编码*：COCO 官方尺度定义 (32²/96² 阈值)
   ],
@@ -333,7 +375,7 @@
 
 #grid(
   columns: (1fr, 1fr),
-  column-gutter: 2em,
+  column-gutter: 1em,
   [
     === 可视映射
     
@@ -367,7 +409,7 @@
 
 #grid(
   columns: (1fr, 1fr),
-  column-gutter: 2em,
+  column-gutter: 1em,
   [
     === 可视映射
     
@@ -583,4 +625,3 @@
   
   Q & A
 ]
-
