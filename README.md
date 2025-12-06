@@ -196,9 +196,9 @@ person_keypoints_train2017.json                             (17 关键点统计)
 
 | 文件 | 实际大小 | 内容 | 用途 |
 |------|----------|------|------|
-| `hero_image.jpg` | 变动 | 筛选出的最佳**讲故事图片** | **门户**背景、故事叙事 |
-| `hero_data.json` | \~19 KB | `hero_image` 的所有标注数据 | **门户**叙事数据 |
-| `overview.jpg` | \~538 KB | 随机采样的图片拼成的**概览图** | **门户**背景，展示数据集概貌 |
+| `hero_image.jpg` | 变动 | 筛选出的最佳图片 | 门户背景、故事叙事 |
+| `hero_data.json` | \~19 KB | `hero_image` 的所有标注数据 | 门户叙事数据 |
+| `overview.jpg` | \~538 KB | 随机采样的图片拼成的概览图 | 门户背景，展示数据集概貌 |
 | `spatial_data.json` | \~2 MB | 8,000 条采样标注、80 类别统计 | 空间视图 |
 | `semantic_data.json` | \~206 KB | 80×80 共现矩阵、条件概率 | 语义视图 |
 | `pose_stats.json` | \~1.0 MB | 17 关键点可见性统计、骨架定义 | 姿态视图 |
@@ -351,7 +351,7 @@ npm config set registry [https://registry.npmmirror.com](https://registry.npmmir
 
 -----
 
-\<p align="center"\>
-\<b\>COCO-Verse\</b\> · Decoding Common Objects in Context<br>
-Made with ❤️ for Data Visualization Course
-\</p\>
+<p align="center">
+  <b>COCO-Verse</b> · Decoding Common Objects in Context<br>
+  Made with ❤️ for Data Visualization Course
+</p>
