@@ -1153,6 +1153,7 @@
                         </div>
                         <div class="head-actions">
                             <div class="tag">Skeleton Graph</div>
+                            <button class="ghost-btn" id="pose-info-btn" type="button" style="margin-left: 10px;">指标说明</button>
                         </div>
                     </div>
                     <div id="pose-content" style="flex:1; min-height:0; overflow:hidden;"></div>
@@ -1163,6 +1164,47 @@
     
     <datalist id="categoryOptions"></datalist>
     <div class="tooltip" id="tooltip"></div>
+
+    <div class="info-modal" id="pose-info-modal">
+        <div class="info-card">
+            <h3>姿态视图指标说明</h3>
+            <p style="margin:4px 0 10px; color:var(--text-muted); font-size:13px;">本视图通过多种方式可视化COCO数据集中所有人体姿态的聚合统计信息。</p>
+            <div class="zoom-wrap" style="font-size: 13px; line-height: 1.6;">
+                <h4 style="margin-top: 0; margin-bottom: 8px; color: #1e293b;">主要可视化模块</h4>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li style="margin-bottom: 12px;">
+                        <strong>平均姿态骨架 (左侧视图)</strong><br>
+                        中心显示的骨架是数据集中所有姿态的“平均形态”。每个关节点的位置是其在所有样本中（归一化后）的平均坐标 (<code>mean_pose</code>)。
+                    </li>
+                    <li style="margin-bottom: 12px;">
+                        <strong>不确定性区域 (左侧视图)</strong><br>
+                        当鼠标悬停在某个关节点上时，会显示其周围的椭圆形区域。这代表了该点位置的标准差 (<code>std_dev_pose</code>)，即可信区间：
+                        <ul>
+                            <li><strong>内圈 (1σ)</strong>: 表示约 68% 的数据落在此范围内，代表核心稳定区域。</li>
+                            <li><strong>外圈 (3σ)</strong>: 表示约 99.7% 的数据落在此范围内，代表该点的最大活动范围。</li>
+                        </ul>
+                        区域越大，说明该关节点在不同姿态中的位置变化越大。
+                    </li>
+                    <li style="margin-bottom: 12px;">
+                        <strong>关节点可见性 (右侧环形图)</strong><br>
+                        环形图的每个扇区代表一个关节点。扇区的半径长度表示该点在所有图像中的可见概率。半径越长，说明该关节点点越不容易被其他物体遮挡。
+                    </li>
+                    <li style="margin-bottom: 12px;">
+                        <strong>辅助分析功能 (左侧视图菜单)</strong><br>
+                        <ul>
+                            <li><strong>对称性分析</strong>: 开启后，会连接左右对称的关节点（如左肩与右肩），用于观察人体的对称性特征。</li>
+                            <li><strong>运动轨迹</strong>: 开启后，会根据标准差模拟出每个关节点可能的运动轨迹，提供一种动态的视角。</li>
+                        </ul>
+                    </li>
+                     <li style="margin-bottom: 12px;">
+                        <strong>统计概览 (底部面板)</strong><br>
+                       该面板展示了从数据中提取的宏观统计信息，如所有关节点的“平均可见性”以及“最稳定”和“最不稳定”的关节点。当聚焦于某个关节点时，会显示其详细数值。
+                    </li>
+                </ul>
+            </div>
+            <button class="info-close" data-close="pose-info-modal">关闭</button>
+        </div>
+    </div>
 
     <div class="info-modal" id="bar-info">
         <div class="info-card">
@@ -1296,6 +1338,7 @@
         const views = Array.from(document.querySelectorAll('.view'));
         const semanticBarIcon = document.getElementById('semanticBarIcon');
         const semanticMatrixIcon = document.getElementById('semanticMatrixIcon');
+        const poseInfoBtn = document.getElementById('pose-info-btn');
 
         const activateView = (targetId) => {
             navButtons.forEach((b) => b.classList.toggle('active', b.dataset.target === targetId));
@@ -1329,6 +1372,7 @@
 
         semanticBarIcon?.addEventListener('click', () => openModal('bar-info'));
         semanticMatrixIcon?.addEventListener('click', () => openModal('matrix-info'));
+        poseInfoBtn?.addEventListener('click', () => openModal('pose-info-modal'));
         wireModalClose();
 
         // 绑定“点击查看样本详情”
