@@ -2,30 +2,22 @@
 import * as d3 from "d3";
 import semanticData from "../data/semantic_data.json";
 
-// --- 🎨 核心配色配置 (明亮色系 - 适配黑色文字) ---
+// --- 🎨 核心配色配置 ---
 const CHART_COLORS = {
-    // 采用高明度的马卡龙/糖果色系，确保黑色文字在上面清晰可见
     palette: [
-        "#a78bfa", // Light Violet (浅紫)
-        "#34d399", // Emerald (嫩绿)
-        "#f472b6", // Pink (粉红)
-        "#fbbf24", // Amber (明黄)
-        "#60a5fa", // Blue (天蓝)
-        "#22d3ee", // Cyan (青色)
-        "#fb7185", // Rose (浅玫红)
-        "#94a3b8"  // Slate (浅灰)
+        "#a78bfa", "#34d399", "#f472b6", "#fbbf24", 
+        "#60a5fa", "#22d3ee", "#fb7185", "#94a3b8"
     ],
-    // 状态颜色
     node: {
-        locked: "#f43f5e",       // 选中节点：醒目的红
-        lockedStroke: "#881337", // 选中边框：深红
-        neighbor: "#2dd4bf",     // 邻居节点：青绿
-        excluded: "#f1f5f9",     // 排除节点：极淡灰
-        text: "#000000"          // 强制纯黑文字
+        locked: "#f43f5e",
+        lockedStroke: "#881337",
+        neighbor: "#2dd4bf",
+        excluded: "#f1f5f9",
+        text: "#000000"
     },
     link: {
-        active: "#6366f1",       // 高亮连线：靛蓝
-        passive: "#cbd5e1"       // 普通连线：浅灰
+        active: "#6366f1",
+        passive: "#cbd5e1"
     }
 };
 
@@ -42,7 +34,6 @@ const selectionContent = d3.select("#selectionContent");
 const categoryOptions = d3.select("#categoryOptions");
 
 const LABEL_FONT_FAMILY = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-// 移除 textMeasureCanvas，因为不再依赖它计算半径，改用估算适配字体
 
 let width = Math.max(container?.clientWidth || 0, 520);
 let height = Math.max(container?.clientHeight || 0, 520);
@@ -56,15 +47,20 @@ let nodeById = new Map();
 let refreshGraphStyles = () => {};
 let focusNodeByName = () => {};
 
+// 🆕 新增：全局占位符，用于在外部触发“恢复引导”
+let restoreGuideState = () => {}; 
+
 const svgRoot = d3
   .select(container)
   .append("svg")
   .attr("width", width)
   .attr("height", height)
-  .style("background-color", "#ffffff"); // 纯白背景
+  .style("background-color", "#ffffff");
 
 // --- 关键层级结构 ---
 const g = svgRoot.append("g");
+// 顺序很重要：Halo(光环) -> Link(线) -> Node(点) -> Label(字) -> Guide(气泡)
+// 我们将在 renderGraph 中动态插入 Halo 和 Guide 组
 const linkGroup = g.append("g").attr("class", "links");
 const nodeGroup = g.append("g").attr("class", "nodes");
 const labelGroup = g.append("g").attr("class", "labels"); 
@@ -114,11 +110,13 @@ function initControls(data) {
   if (thresholdValue) thresholdValue.textContent = defaultThreshold;
 
   focusInput?.addEventListener("change", () => focusNodeByName(focusInput.value));
+  
   clearFocusBtn?.addEventListener("click", () => {
     focusInput.value = "";
     lockedNode = null;
     refreshGraphStyles();
     updateInfoPanel(null);
+    restoreGuideState(); // 🆕 点击清除时，恢复引导
   });
 
   resetFiltersBtn?.addEventListener("click", () => {
@@ -130,40 +128,111 @@ function initControls(data) {
     refreshGraphStyles(true);
     updateInfoPanel(null);
     updateExcludedList();
+    restoreGuideState(); // 🆕 点击重置时，恢复引导
   });
 
   refreshGraphStyles(true);
 }
 
 function renderGraph(data) {
-  // 1. 定义半径比例尺：根据 count 决定圆的大小
-  // 使用 scaleSqrt 确保面积与数值成正比，视觉更自然
+  // 1. 比例尺
   const radiusScale = d3.scaleSqrt()
     .domain(d3.extent(data.nodes, (d) => d.count || 1))
-    .range([20, 65]); // ❗调整这里：最小半径20px，最大半径65px
+    .range([20, 65]);
 
-  // 2. 边框粗细比例尺
   const strokeScale = d3.scaleLinear()
     .domain(d3.extent(data.links, (d) => d.value))
     .range([1, 4]);
   
   const colorScale = d3.scaleOrdinal(CHART_COLORS.palette);
-
-  // 3. 核心计算函数
-  // 获取节点半径
   const nodeRadius = (d) => radiusScale(d.count || 1);
 
-  // 获取字体大小：根据半径动态缩小，防止溢出
+  // 2. 准备特殊节点数据
+  const personNode = data.nodes.find(n => n.name === 'person');
+
+  // 3. 补充层级组 (Halo 在最底层，Guides 在最顶层)
+  // insert("g", ".links") 意味着把 halos 插在 links 前面（即下方）
+  const haloGroup = g.insert("g", ".links").attr("class", "halos");
+  const guideGroup = g.append("g").attr("class", "guides");
+
+  // 定义引用
+  let personHalo = null;
+  let personGuide = null;
+
+  // 🆕 封装：创建引导 (光环 + 气泡)
+  const createGuide = () => {
+      // 避免重复创建 或 节点不存在
+      if (personHalo || personGuide || !personNode) return;
+
+      // 创建光环
+      personHalo = haloGroup.append("circle")
+          .datum(personNode)
+          .attr("class", "pulsing-node-halo")
+          .attr("r", nodeRadius(personNode))
+          .attr("fill", "none")
+          .attr("stroke", "#ef4444") // 警示红
+          .attr("stroke-width", 4)
+          .attr("cx", personNode.x || width/2) // 初始防抖
+          .attr("cy", personNode.y || height/2);
+
+      // 创建气泡组
+      personGuide = guideGroup.append("g")
+          .attr("class", "guide-label-group")
+          .style("opacity", 0) // 初始透明，淡入
+          .attr("transform", `translate(${personNode.x || width/2}, ${personNode.y || height/2})`);
+
+      // 气泡背景
+      personGuide.append("rect")
+          .attr("class", "guide-label-bg")
+          .attr("rx", 6)
+          .attr("ry", 6)
+          .attr("width", 86)
+          .attr("height", 24)
+          .attr("x", 12)
+          .attr("y", -32);
+
+      // 气泡文字
+      personGuide.append("text")
+          .attr("class", "guide-label-text")
+          .attr("x", 55)
+          .attr("y", -20)
+          .attr("text-anchor", "middle")
+          .attr("dominant-baseline", "middle")
+          .text("🔥 关键节点");
+          
+      // 气泡箭头
+      personGuide.append("path")
+          .attr("d", "M 20 -8 L 26 -2 L 32 -8 Z")
+          .attr("fill", "#0f172a");
+
+      // 执行淡入动画
+      personGuide.transition().duration(400).style("opacity", 1);
+  };
+
+  // 🆕 封装：移除引导
+  const removeGuide = () => {
+      if (personHalo) {
+          personHalo.remove();
+          personHalo = null;
+      }
+      if (personGuide) {
+          personGuide.remove();
+          personGuide = null;
+      }
+  };
+
+  // 🆕 暴露给全局：恢复引导状态
+  restoreGuideState = () => {
+      if (!lockedNode) { // 只有在没有选中节点时才恢复
+          createGuide();
+          simulation.restart(); // 触发 tick 更新位置
+      }
+  };
+
   const getFontSize = (d) => {
     const r = nodeRadius(d);
     const textLength = d.name.length;
-    // 估算逻辑：
-    // 我们希望文字宽度大约占圆直径的 90% (r * 1.8)
-    // 假设平均每个汉字/字符的宽度约为 fontSize * 0.75
-    // 所以：fontSize ≈ (r * 1.8) / (textLength * 0.75)
     let size = (r * 1.8) / (textLength * 0.75 || 1);
-    
-    // 限制字体范围：最小 9px (太小看不清)，最大 20px (或半径的一半，避免字太大)
     return Math.min(20, Math.max(9, size));
   };
 
@@ -172,10 +241,9 @@ function renderGraph(data) {
     .force("link", d3.forceLink(data.links).id((d) => d.id).distance(160))
     .force("charge", d3.forceManyBody().strength(-450))
     .force("center", d3.forceCenter(width / 2, height / 2))
-    // ❗碰撞检测：使用新的基于频率的半径
     .force("collide", d3.forceCollide().radius((d) => nodeRadius(d) + 5).iterations(2));
 
-  // --- 连线 ---
+  // --- 初始化渲染 ---
   const link = linkGroup
     .selectAll("line")
     .data(data.links)
@@ -185,32 +253,31 @@ function renderGraph(data) {
     .attr("stroke-linecap", "round")
     .attr("stroke-width", (d) => strokeScale(d.value));
 
-  // --- 节点 ---
   const node = nodeGroup
     .selectAll("circle")
     .data(data.nodes)
     .join("circle")
     .attr("stroke", "#ffffff")
     .attr("stroke-width", 2)
-    // ❗半径现在由 count 决定
     .attr("r", (d) => nodeRadius(d))
     .attr("fill", (d) => colorScale(d.group || (d.id % CHART_COLORS.palette.length)))
     .call(drag(simulation));
 
-  // --- 文字 ---
   const label = labelGroup
     .selectAll("text")
     .data(data.nodes)
     .join("text")
     .attr("pointer-events", "none")
-    // ❗动态设置字号
     .attr("font-size", (d) => getFontSize(d))
     .attr("font-weight", 500)
     .attr("font-family", LABEL_FONT_FAMILY)
     .attr("text-anchor", "middle")
     .attr("dominant-baseline", "middle")
-    .attr("fill", "#000000") // 纯黑
+    .attr("fill", "#000000")
     .text((d) => d.name);
+
+  // 初始调用：创建引导
+  createGuide();
 
   // --- 交互 ---
   node
@@ -233,6 +300,7 @@ function renderGraph(data) {
     })
     .on("click", (event, d) => {
       event.stopPropagation();
+      removeGuide(); // 交互时移除引导
       lockNode(d);
     })
     .on("dblclick", (event, d) => {
@@ -241,23 +309,34 @@ function renderGraph(data) {
     });
 
   svgRoot.on("click", () => {
+    // 点击空白处
+    removeGuide(); // 先移除旧的（避免动画冲突）
     lockedNode = null;
     focusInput.value = "";
     refreshVisibility();
     updateInfoPanel(null);
+    restoreGuideState(); // 恢复引导（回到初始状态）
   });
 
   simulation.on("tick", () => {
-    link
-      .attr("x1", (d) => d.source.x)
-      .attr("y1", (d) => d.source.y)
-      .attr("x2", (d) => d.target.x)
-      .attr("y2", (d) => d.target.y);
+      link
+          .attr("x1", (d) => d.source.x)
+          .attr("y1", (d) => d.source.y)
+          .attr("x2", (d) => d.target.x)
+          .attr("y2", (d) => d.target.y);
 
-    node.attr("cx", (d) => d.x).attr("cy", (d) => d.y);
+      node.attr("cx", (d) => d.x).attr("cy", (d) => d.y);
+      label.attr("x", (d) => d.x).attr("y", (d) => d.y);
 
-    // 文字跟随位置更新，但字号不需要在 tick 中更新
-    label.attr("x", (d) => d.x).attr("y", (d) => d.y);
+      // 更新 Halo 位置
+      if (personHalo) {
+          personHalo.attr("cx", (d) => d.x).attr("cy", (d) => d.y);
+      }
+
+      // 更新 Guide 位置
+      if (personGuide && personNode) {
+          personGuide.attr("transform", `translate(${personNode.x}, ${personNode.y})`);
+      }
   });
 
   refreshVisibility();
@@ -289,6 +368,7 @@ function renderGraph(data) {
     }
 
     labelGroup.raise();
+    if(guideGroup) guideGroup.raise(); // 确保 Guide 在最上层
 
     link
       .style("display", (l) => {
@@ -392,11 +472,13 @@ function renderGraph(data) {
   function handleFocus(value) {
     const target = data.nodes.find((n) => n.name.toLowerCase() === value.trim().toLowerCase());
     if (target) {
+      removeGuide(); // 搜索聚焦时也移除引导
       lockNode(target);
     } else {
       lockedNode = null;
       refreshVisibility();
       updateInfoPanel(null);
+      restoreGuideState(); // 搜索为空时恢复引导
     }
   }
 }
@@ -419,7 +501,7 @@ function updateInfoPanel(node) {
   if (!selectionContent.node()) return;
 
   if (!node) {
-    selectionContent.text("点击节点查看共现关系与条件概率");
+    selectionContent.html(`<div style="color:var(--text-muted);">点击节点查看共现关系与条件概率</div>`);
     return;
   }
 
@@ -440,14 +522,63 @@ function updateInfoPanel(node) {
     })
     .join("");
 
+  // --- 🆕 引导按钮逻辑 ---
+  let biasActionHTML = "";
+  if (node.name === "person") {
+    biasActionHTML = `
+      <div style="margin-top:16px; padding-top:12px; border-top:1px dashed #cbd5e1;">
+        <div style="font-size:11px; font-weight:700; color:#be123c; margin-bottom:6px; display:flex; align-items:center; gap:4px;">
+          <span>⚠️</span> 异常数据分布检测
+        </div>
+        <div style="font-size:12px; color:#64748b; margin-bottom:8px; line-height:1.4;">
+          Person 类别的中心度极高。这种数据分布是否会导致模型产生某种“偏见”？
+        </div>
+        <button id="btn-link-bias" style="
+          width:100%;
+          background: #fff1f2;
+          color: #be123c;
+          border: 1px solid #fda4af;
+          padding: 8px 12px;
+          border-radius: 6px;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+        ">
+          查看模型偏差实验 →
+        </button>
+      </div>
+    `;
+  }
+
   selectionContent.html(`
         <div style="padding-bottom:12px; margin-bottom:12px; border-bottom:2px solid ${CHART_COLORS.node.locked};">
             <div style="font-size:16px; font-weight:700; color:#0f172a;">${node.name}</div>
             <div style="font-size:13px; color:#64748b; margin-top:4px;">总出现次数: <strong>${node.count}</strong></div>
         </div>
         <div style="font-size:12px; font-weight:600; color:#64748b; margin-bottom:8px;">Top 共现类别 (条件概率):</div>
-        <ul class="info-list" style="padding-left:0; list-style:none; max-height:300px; overflow-y:auto;">${listHTML || "<li style='color:#94a3b8;'>无高频共现</li>"}</ul>
+        <ul class="info-list" style="padding-left:0; list-style:none; max-height:220px; overflow-y:auto;">
+            ${listHTML || "<li style='color:#94a3b8;'>无高频共现</li>"}
+        </ul>
+        ${biasActionHTML} 
     `);
+
+  if (node.name === "person") {
+    const btn = document.getElementById("btn-link-bias");
+    if (btn) {
+      btn.addEventListener("click", () => {
+        window.dispatchEvent(
+          new CustomEvent("switch-view", { detail: "bias-view" })
+        );
+      });
+      btn.onmouseenter = () => (btn.style.background = "#ffe4e6");
+      btn.onmouseleave = () => (btn.style.background = "#fff1f2");
+    }
+  }
 }
 
 function updateExcludedList() {
@@ -475,13 +606,13 @@ function updateExcludedList() {
     .append("span")
     .attr("class", "excluded-chip")
     .merge(chips)
-    // ❗核心修复：使用函数 (d) => ... 确保 d 能被正确读取
     .html((d) => `<span>${d.name}</span><span style="opacity:0.6; font-size:10px; margin-left:4px;">✕</span>`)
     .on("click", (event, d) => {
       excludedNodes.delete(d.id);
       refreshGraphStyles(true);
       updateInfoPanel(lockedNode);
       updateExcludedList();
+      restoreGuideState(); // 排除节点时，尝试恢复引导
     });
 }
 

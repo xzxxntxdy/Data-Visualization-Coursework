@@ -917,7 +917,36 @@
             max-width: 100%;
             overflow: hidden;
         }
+        /* --- 🆕 节点脉冲动画 --- */
+        @keyframes node-pulse-ring {
+            0% { transform: scale(1); opacity: 0.8; stroke-opacity: 0.8; }
+            50% { transform: scale(1.6); opacity: 0; stroke-opacity: 0; }
+            100% { transform: scale(1); opacity: 0; stroke-opacity: 0; }
+        }
 
+        .pulsing-node-halo {
+            animation: node-pulse-ring 2.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+            transform-origin: center;
+            pointer-events: none; /* 确保不挡住鼠标点击 */
+        }
+
+        /* --- 🆕 引导气泡样式 --- */
+        .guide-label-group {
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .guide-label-bg {
+            fill: #0f172a;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));
+        }
+
+        .guide-label-text {
+            fill: #ffffff;
+            font-size: 11px;
+            font-weight: 600;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
     </style>
 </head>
 <body>
@@ -1064,7 +1093,7 @@
                     <span>姿态 / 骨架视图</span>
                 </button>
                 <button class="nav-item" data-target="bias-view">
-                    <span>模型偏差分析</span>
+                    <span>类别先验偏差分析</span>
                 </button>
             </div>
         </aside>
@@ -1389,6 +1418,12 @@
                 });
             });
         };
+        window.addEventListener('switch-view', (e) => {
+                const targetId = e.detail; // 例如 "bias-view"
+                if (targetId) {
+                    activateView(targetId);
+                }
+            });
 
         semanticBarIcon?.addEventListener('click', () => openModal('bar-info'));
         semanticMatrixIcon?.addEventListener('click', () => openModal('matrix-info'));
