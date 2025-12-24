@@ -1063,6 +1063,9 @@
                 <button class="nav-item" data-target="pose-view">
                     <span>姿态 / 骨架视图</span>
                 </button>
+                <button class="nav-item" data-target="bias-view">
+                    <span>模型偏差分析</span>
+                </button>
             </div>
         </aside>
 
@@ -1157,6 +1160,22 @@
                         </div>
                     </div>
                     <div id="pose-content" style="flex:1; min-height:0; overflow:hidden;"></div>
+                </section>
+            </section>
+
+            <!-- 模型偏差视图 -->
+            <section class="view" id="bias-view">
+                <section class="panel spatial-panel" style="height:100%;">
+                    <div class="panel-head">
+                        <div>
+                            <h1>模型偏差分析</h1>
+                            <p>可视化模型在无意义输入下的先验分布</p>
+                        </div>
+                        <div class="head-actions">
+                            <div class="tag">Model Bias</div>
+                        </div>
+                    </div>
+                    <div id="bias-content" style="flex:1; min-height:0; overflow:hidden;"></div>
                 </section>
             </section>
         </section>
@@ -1333,6 +1352,7 @@
     <script type="module" src="./js/semantic_graph.js"></script>
     <script type="module" src="./js/spatial_view.js"></script>
     <script type="module" src="./js/pose_view.js"></script>
+    <script type="module" src="./js/bias_view.js"></script>
     <script>
         const navButtons = Array.from(document.querySelectorAll('.nav-item'));
         const views = Array.from(document.querySelectorAll('.view'));

@@ -1,0 +1,322 @@
+[
+  {
+    "name": "person",
+    "score": 0.5398524403572083
+  },
+  {
+    "name": "tennis racket",
+    "score": 0.16155390441417694
+  },
+  {
+    "name": "laptop",
+    "score": 0.08360038697719574
+  },
+  {
+    "name": "skateboard",
+    "score": 0.06496777385473251
+  },
+  {
+    "name": "bed",
+    "score": 0.06074688211083412
+  },
+  {
+    "name": "cat",
+    "score": 0.05711345747113228
+  },
+  {
+    "name": "sports ball",
+    "score": 0.0512666180729866
+  },
+  {
+    "name": "car",
+    "score": 0.04054587706923485
+  },
+  {
+    "name": "dog",
+    "score": 0.03687931224703789
+  },
+  {
+    "name": "tv",
+    "score": 0.03512395918369293
+  },
+  {
+    "name": "tie",
+    "score": 0.035051021724939346
+  },
+  {
+    "name": "bench",
+    "score": 0.031450267881155014
+  },
+  {
+    "name": "chair",
+    "score": 0.030541416257619858
+  },
+  {
+    "name": "airplane",
+    "score": 0.029813440516591072
+  },
+  {
+    "name": "suitcase",
+    "score": 0.029327653348445892
+  },
+  {
+    "name": "cell phone",
+    "score": 0.027280228212475777
+  },
+  {
+    "name": "remote",
+    "score": 0.02701718918979168
+  },
+  {
+    "name": "keyboard",
+    "score": 0.026489876210689545
+  },
+  {
+    "name": "train",
+    "score": 0.023018715903162956
+  },
+  {
+    "name": "mouse",
+    "score": 0.02158537693321705
+  },
+  {
+    "name": "couch",
+    "score": 0.018891287967562675
+  },
+  {
+    "name": "boat",
+    "score": 0.01755611225962639
+  },
+  {
+    "name": "book",
+    "score": 0.01733780838549137
+  },
+  {
+    "name": "clock",
+    "score": 0.014488176442682743
+  },
+  {
+    "name": "umbrella",
+    "score": 0.013648648746311665
+  },
+  {
+    "name": "traffic light",
+    "score": 0.013372140936553478
+  },
+  {
+    "name": "pizza",
+    "score": 0.013252033852040768
+  },
+  {
+    "name": "truck",
+    "score": 0.012233246117830276
+  },
+  {
+    "name": "teddy bear",
+    "score": 0.01211013738065958
+  },
+  {
+    "name": "scissors",
+    "score": 0.01146000437438488
+  },
+  {
+    "name": "surfboard",
+    "score": 0.010828454978764057
+  },
+  {
+    "name": "bottle",
+    "score": 0.010357515886425972
+  },
+  {
+    "name": "handbag",
+    "score": 0.009026930667459965
+  },
+  {
+    "name": "toilet",
+    "score": 0.008800962008535862
+  },
+  {
+    "name": "stop sign",
+    "score": 0.008054486475884914
+  },
+  {
+    "name": "cake",
+    "score": 0.007929771207273006
+  },
+  {
+    "name": "backpack",
+    "score": 0.007848533801734447
+  },
+  {
+    "name": "bear",
+    "score": 0.007829326204955578
+  },
+  {
+    "name": "frisbee",
+    "score": 0.007413747254759073
+  },
+  {
+    "name": "bird",
+    "score": 0.007374090142548084
+  },
+  {
+    "name": "fire hydrant",
+    "score": 0.006795996334403753
+  },
+  {
+    "name": "bowl",
+    "score": 0.0067316326312720776
+  },
+  {
+    "name": "cup",
+    "score": 0.006679138634353876
+  },
+  {
+    "name": "toothbrush",
+    "score": 0.006642179563641548
+  },
+  {
+    "name": "bus",
+    "score": 0.006117085460573435
+  },
+  {
+    "name": "dining table",
+    "score": 0.005773226730525494
+  },
+  {
+    "name": "potted plant",
+    "score": 0.005406989715993404
+  },
+  {
+    "name": "snowboard",
+    "score": 0.005321374163031578
+  },
+  {
+    "name": "baseball glove",
+    "score": 0.00531316502019763
+  },
+  {
+    "name": "vase",
+    "score": 0.005041566677391529
+  },
+  {
+    "name": "baseball bat",
+    "score": 0.004982650745660067
+  },
+  {
+    "name": "knife",
+    "score": 0.004703930113464594
+  },
+  {
+    "name": "skis",
+    "score": 0.0043901498429477215
+  },
+  {
+    "name": "hot dog",
+    "score": 0.0042505948804318905
+  },
+  {
+    "name": "wine glass",
+    "score": 0.004010150209069252
+  },
+  {
+    "name": "parking meter",
+    "score": 0.0039719282649457455
+  },
+  {
+    "name": "kite",
+    "score": 0.003949266858398914
+  },
+  {
+    "name": "sheep",
+    "score": 0.0038074012845754623
+  },
+  {
+    "name": "cow",
+    "score": 0.0037043094635009766
+  },
+  {
+    "name": "elephant",
+    "score": 0.003428681753575802
+  },
+  {
+    "name": "spoon",
+    "score": 0.0032249391078948975
+  },
+  {
+    "name": "fork",
+    "score": 0.003223179839551449
+  },
+  {
+    "name": "donut",
+    "score": 0.0028783276211470366
+  },
+  {
+    "name": "oven",
+    "score": 0.002862385706976056
+  },
+  {
+    "name": "bicycle",
+    "score": 0.00261777825653553
+  },
+  {
+    "name": "horse",
+    "score": 0.002518197987228632
+  },
+  {
+    "name": "sandwich",
+    "score": 0.0023255078122019768
+  },
+  {
+    "name": "hair drier",
+    "score": 0.0022085749078541994
+  },
+  {
+    "name": "motorcycle",
+    "score": 0.0020658602006733418
+  },
+  {
+    "name": "carrot",
+    "score": 0.001893080654554069
+  },
+  {
+    "name": "microwave",
+    "score": 0.0018709813011810184
+  },
+  {
+    "name": "broccoli",
+    "score": 0.0016959033673629165
+  },
+  {
+    "name": "apple",
+    "score": 0.0016631577163934708
+  },
+  {
+    "name": "giraffe",
+    "score": 0.0016559007344767451
+  },
+  {
+    "name": "banana",
+    "score": 0.001652523991651833
+  },
+  {
+    "name": "orange",
+    "score": 0.001457804231904447
+  },
+  {
+    "name": "sink",
+    "score": 0.001398153486661613
+  },
+  {
+    "name": "refrigerator",
+    "score": 0.0012032784288749099
+  },
+  {
+    "name": "zebra",
+    "score": 0.0010459556942805648
+  },
+  {
+    "name": "toaster",
+    "score": 0.0004530946025624871
+  }
+]
