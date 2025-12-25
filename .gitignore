@@ -33,6 +33,6 @@ src/data/instances_val2017.json
 src/data/person_keypoints_train2017.json
 src/data/person_keypoints_val2017.json
 
-data/
-data/train2017.zip
-images/spatial
+/data/
+/data/train2017.zip
+train/spatial
