@@ -1095,6 +1095,9 @@
                 <button class="nav-item" data-target="bias-view">
                     <span>类别先验偏差分析</span>
                 </button>
+                <button class="nav-item" data-target="spatial-prior-view">
+                    <span>空间先验实验</span>
+                </button>
             </div>
         </aside>
 
@@ -1205,6 +1208,22 @@
                         </div>
                     </div>
                     <div id="bias-content" style="flex:1; min-height:0; overflow:hidden;"></div>
+                </section>
+            </section>
+
+            <!-- 空间先验实验视图 -->
+            <section class="view" id="spatial-prior-view">
+                <section class="panel spatial-panel" style="height:100%;">
+                    <div class="panel-head">
+                        <div>
+                            <h1>空间先验实验</h1>
+                            <p>Grounding Transformer 学习到的位置分布偏差</p>
+                        </div>
+                        <div class="head-actions">
+                            <div class="tag">Spatial Prior</div>
+                        </div>
+                    </div>
+                    <div id="spatial-prior-content" style="flex:1; min-height:0; overflow:hidden;"></div>
                 </section>
             </section>
         </section>
@@ -1382,6 +1401,7 @@
     <script type="module" src="./js/spatial_view.js"></script>
     <script type="module" src="./js/pose_view.js"></script>
     <script type="module" src="./js/bias_view.js"></script>
+    <script type="module" src="./js/spatial_prior_view.js"></script>
     <script>
         const navButtons = Array.from(document.querySelectorAll('.nav-item'));
         const views = Array.from(document.querySelectorAll('.view'));

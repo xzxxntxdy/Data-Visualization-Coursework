@@ -85,6 +85,48 @@ const charts = {
     distribution: { update: () => {}, resize: () => {} },
 };
 
+// 空间先验实验数据中的类别列表（用于判断是否有实验数据）
+const PRIOR_EXPERIMENT_CATEGORIES = new Set([
+    "bed", "elephant", "train", "cat", "airplane", "dog", "giraffe", "dining table",
+    "couch", "skateboard", "skis", "cow", "sheep", "sink", "refrigerator", "toothbrush",
+    "tie", "surfboard", "toilet", "baseball glove", "sandwich", "pizza", "horse",
+    "suitcase", "banana", "oven", "bus", "microwave", "cake", "truck", "stop sign",
+    "backpack", "bowl", "hair drier", "handbag", "hot dog", "donut", "bottle", "remote",
+    "teddy bear", "boat", "chair", "laptop", "scissors", "bird", "clock", "snowboard",
+    "frisbee", "person", "zebra", "mouse", "cup", "parking meter", "carrot", "apple",
+    "tv", "motorcycle", "keyboard", "potted plant", "spoon", "vase", "tennis racket",
+    "fork", "book", "baseball bat", "knife", "traffic light", "sports ball", "bench",
+    "cell phone", "bicycle", "orange", "umbrella", "broccoli", "wine glass", "car", "bear"
+]);
+
+// 更新空间先验实验链接按钮
+function updatePriorLinkButton() {
+    const btn = document.getElementById("sv2-prior-link");
+    if (!btn) return;
+    
+    if (state.clickedCategory && PRIOR_EXPERIMENT_CATEGORIES.has(state.clickedCategory)) {
+        btn.style.display = "block";
+        btn.textContent = `🔬 查看 "${state.clickedCategory}" 空间先验实验 →`;
+        
+        // 移除旧的事件监听器
+        btn.replaceWith(btn.cloneNode(true));
+        const newBtn = document.getElementById("sv2-prior-link");
+        
+        newBtn.addEventListener("click", () => {
+            // 切换到空间先验视图并传递类别
+            window.dispatchEvent(new CustomEvent("switch-view", { detail: "spatial-prior-view" }));
+            // 延迟触发聚焦事件
+            setTimeout(() => {
+                window.dispatchEvent(new CustomEvent("spatial-prior-focus", {
+                    detail: { category: state.clickedCategory }
+                }));
+            }, 100);
+        });
+    } else {
+        btn.style.display = "none";
+    }
+}
+
 // 获取当前过滤后的数据（用于联动）
 function getFilteredData() {
     let data = spatialData.annotations;
@@ -127,6 +169,7 @@ function computeFilteredScaleDistribution(data) {
 
 // ResizeObserver 实例
 let resizeObserver = null;
+
 
 // ═══════════════════════════════════════════════════════════════════
 // 🚀 初始化入口
@@ -324,6 +367,9 @@ function render() {
                             <span class="sv2-legend-item"><i style="background:${DESIGN.colors.scale.medium}"></i>中</span>
                             <span class="sv2-legend-item"><i style="background:${DESIGN.colors.scale.large}"></i>大</span>
                         </div>
+                        <button id="sv2-prior-link" class="sv2-prior-link-btn" style="display:none;">
+                            🔬 查看空间先验实验 →
+                        </button>
                     </div>
                 </div>
             </div>
@@ -714,6 +760,25 @@ function injectStyles() {
             stroke: ${C.primary};
             stroke-width: 1.5;
             stroke-dasharray: 4,2;
+        }
+        
+        /* 空间先验实验链接按钮 */
+        .sv2-prior-link-btn {
+            margin-top: 8px;
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 1px solid #fcd34d;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #92400e;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .sv2-prior-link-btn:hover {
+            background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
         }
         
         /* 响应式 */
@@ -1204,6 +1269,8 @@ function renderDistributionChart() {
                 charts.contour.update();
                 charts.scatter.update();
                 charts.distribution.update();
+                // 更新空间先验实验链接按钮
+                updatePriorLinkButton();
             });
         
         // Y轴 - 类别名称可点击
@@ -1224,6 +1291,8 @@ function renderDistributionChart() {
                 charts.contour.update();
                 charts.scatter.update();
                 charts.distribution.update();
+                // 更新空间先验实验链接按钮
+                updatePriorLinkButton();
             });
         
         g.selectAll(".domain").remove();

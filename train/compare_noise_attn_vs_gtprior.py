@@ -8,7 +8,7 @@ import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 
-from core.transformer_model import TransformerBBoxWithAttn
+from transformer_model import TransformerBBoxWithAttn
 
 
 # --------------------------
@@ -100,63 +100,27 @@ def extract_attn(model, x, cid, device, expect_attn_softmax=True):
 # --------------------------
 # Plot helper
 # --------------------------
-def plot_compare(gt, attn_avg, diff, title, save_path, mode="log_inferno"):
-    """
-    mode:
-      - "inferno": raw prob + inferno
-      - "log_inferno": log(prob) + inferno (推荐)
-      - "ratio": log(attn/uniform) + coolwarm
-    """
+def plot_compare(gt, attn_avg, diff, title, save_path):
     fig, axes = plt.subplots(1, 3, figsize=(10, 3.5))
 
-    if mode == "inferno":
-        cmap = "inferno"
-        vmin = 0.0
-        vmax = max(gt.max(), attn_avg.max())
-        g = gt
-        a = attn_avg
-
-    elif mode == "log_inferno":
-        cmap = "inferno"
-        eps = 1e-8
-        g = np.log(gt + eps)
-        a = np.log(attn_avg + eps)
-        vmin = min(g.min(), a.min())
-        vmax = max(g.max(), a.max())
-
-    elif mode == "ratio":
-        # log(attn/uniform)
-        cmap = "coolwarm"
-        eps = 1e-8
-        uniform = 1.0 / gt.size
-        g = np.log(gt / uniform + eps)
-        a = np.log(attn_avg / uniform + eps)
-        vmax = max(abs(g).max(), abs(a).max())
-        vmin = -vmax
-
-    else:
-        raise ValueError("Unknown mode")
-
-    im0 = axes[0].imshow(g, cmap=cmap, vmin=vmin, vmax=vmax)
+    axes[0].imshow(gt, cmap="viridis")
     axes[0].set_title("GT Prior")
     axes[0].axis("off")
-    plt.colorbar(im0, ax=axes[0], fraction=0.046)
 
-    im1 = axes[1].imshow(a, cmap=cmap, vmin=vmin, vmax=vmax)
+    axes[1].imshow(attn_avg, cmap="viridis")
     axes[1].set_title("Avg Attn (Noise)")
     axes[1].axis("off")
-    plt.colorbar(im1, ax=axes[1], fraction=0.046)
 
-    # Diff still shown as signed
-    im2 = axes[2].imshow(diff, cmap="bwr")
+    im = axes[2].imshow(diff, cmap="bwr")
     axes[2].set_title("Attn - GT")
     axes[2].axis("off")
-    plt.colorbar(im2, ax=axes[2], fraction=0.046)
+    plt.colorbar(im, ax=axes[2], fraction=0.046)
 
     plt.suptitle(title, fontsize=12)
     plt.tight_layout()
     plt.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
+
 
 # --------------------------
 # Main
@@ -269,7 +233,7 @@ def main():
         diff = attn_avg - gt
         title = f"{name}({cid})  corr={row['corr(avg_attn,gt)']:.3f}  JS={row['JS(avg_attn,gt)']:.3f}"
         save_path = os.path.join(args.out_dir, "topk_vis", f"{cid}_{name}_compare.png")
-        plot_compare(gt, attn_avg, diff, title, save_path, mode="log_inferno")
+        plot_compare(gt, attn_avg, diff, title, save_path)
 
     print(f"\n✅ Saved TopK visualizations to {os.path.join(args.out_dir, 'topk_vis')}")
     print("Done.")

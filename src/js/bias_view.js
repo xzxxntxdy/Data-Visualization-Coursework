@@ -270,6 +270,49 @@ function initBiasView() {
     .style("line-height", "1.5");
 
   // =================================================================
+  // C2. 相关实验链接
+  // =================================================================
+  const relatedSection = d3.select(container).append("div")
+    .style("margin", "0 20px 20px 20px")
+    .style("padding", "16px 20px")
+    .style("background", "linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)")
+    .style("border", "1px solid #c7d2fe")
+    .style("border-radius", "8px")
+    .style("display", "flex")
+    .style("align-items", "center")
+    .style("justify-content", "space-between");
+
+  relatedSection.append("div")
+    .html(`
+      <strong>🔗 相关实验：</strong> 
+      除了类别先验，模型还学习了<span style="color:#6366f1; font-weight:600;">空间位置先验</span>——
+      即每个类别在图像中最可能出现的区域。
+    `)
+    .style("font-size", "13px")
+    .style("color", "#3730a3");
+
+  const linkBtn = relatedSection.append("button")
+    .text("查看空间先验实验 →")
+    .style("padding", "8px 16px")
+    .style("background", "#6366f1")
+    .style("color", "white")
+    .style("border", "none")
+    .style("border-radius", "6px")
+    .style("font-size", "12px")
+    .style("font-weight", "600")
+    .style("cursor", "pointer")
+    .style("transition", "all 0.2s ease")
+    .on("mouseenter", function() {
+      d3.select(this).style("background", "#4f46e5").style("transform", "translateY(-1px)");
+    })
+    .on("mouseleave", function() {
+      d3.select(this).style("background", "#6366f1").style("transform", "translateY(0)");
+    })
+    .on("click", function() {
+      window.dispatchEvent(new CustomEvent("switch-view", { detail: "spatial-prior-view" }));
+    });
+
+  // =================================================================
   // D. Arrows (SVG Overlay)
   // =================================================================
   const overlaySvg = d3.select(container).append("svg")
