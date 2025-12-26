@@ -460,8 +460,10 @@ function render() {
         <style>${getStylesHTML()}</style>
         <div class="sv2-root">
             <div class="sv2-card">
-                <div class="sv2-title">人体节点分析</div>
-                <div class="sv2-subtitle">节点 · 1σ/3σ边界 · 交互探索</div>
+                <div class="sv2-title">你的姿态</div>
+                <div class="sv2-subtitle">
+                    节点颜色：各个不同的鲜艳色彩区分不同身体部位 · 头部(红)、躯干(青)、四肢(黄绿橙蓝紫) · 概率椭圆表示位置不确定性
+                </div>
                 <div id="view-skeleton" class="sv2-chart-area">
 
                     <!-- ★ 顶部正中间的辅助功能按钮 -->
@@ -551,9 +553,11 @@ function renderSkeletonSystem(root, nodes, links, tooltip) {
         .attr("stroke-width", 0.5);
 
     const margin = 60;
-    const xScale = d3.scaleLinear().domain([0, 1]).range([margin, width - margin]);
-    const yScale = d3.scaleLinear().domain([0, 1]).range([height - margin, margin]);
-    const xRatio = width - 2 * margin; const yRatio = height - 2 * margin;
+    // 等比缩放：保证 x 和 y 的缩放因子相同
+    const maxRange = Math.min(width - 2 * margin, height - 2 * margin);
+    const xScale = d3.scaleLinear().domain([0, 1]).range([margin + (width - 2 * margin - maxRange) / 2, margin + (width - 2 * margin - maxRange) / 2 + maxRange]);
+    const yScale = d3.scaleLinear().domain([0, 1]).range([height - margin - (height - 2 * margin - maxRange) / 2, margin + (height - 2 * margin - maxRange) / 2]);
+    const xRatio = maxRange; const yRatio = maxRange;
 
     // 👇 [新增点] 定义曲线生成器，让骨骼更平滑
     const lineGenerator = d3.line()

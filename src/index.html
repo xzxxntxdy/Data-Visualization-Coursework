@@ -1098,6 +1098,9 @@
                 <button class="nav-item" data-target="spatial-prior-view">
                     <span>空间先验实验</span>
                 </button>
+                <button class="nav-item" data-target="pose-model-view">
+                    <span>姿态 + 模型分析</span>
+                </button>
             </div>
         </aside>
 
@@ -1226,6 +1229,26 @@
                     <div id="spatial-prior-content" style="flex:1; min-height:0; overflow:hidden;"></div>
                 </section>
             </section>
+
+            <!-- 姿态 + 模型分析视图 -->
+            <section class="view" id="pose-model-view">
+                <section class="panel spatial-panel" style="height:100%;">
+                    <div class="panel-head">
+                        <div>
+                            <h1>姿态 + 模型分析</h1>
+                            <p>通过三个关联图表深度理解Transformer模型决策机制与人体结构关系</p>
+                        </div>
+                        <div class="head-actions">
+                            
+                            <div class="tag">Model Interpretability</div>
+
+
+                            <button class="ghost-btn" id="pose-model-pipeline-btn" type="button" style="margin-right: auto; align-self: flex-end;">实验流程</button>
+                        </div>
+                    </div>
+                    <div id="pose-model-content" style="flex:1; min-height:0; overflow:auto;"></div>
+                </section>
+            </section>
         </section>
     </main>
     
@@ -1291,6 +1314,72 @@
                 <img class="modal-image zoomable" src="./icon/cond_matrix.png" alt="条件概率矩阵">
             </div>
             <button class="info-close" data-close="matrix-info">关闭</button>
+        </div>
+    </div>
+
+    <div class="info-modal" id="pipeline-info">
+        <div class="info-card">
+            <h3>实验流程：从图像到注意力热力图</h3>
+            <p style="margin:4px 0 10px; color:var(--text-muted); font-size:13px;">Transformer模型的特征提取与注意力可视化过程</p>
+            <div class="zoom-wrap">
+                <img class="modal-image zoomable" src="./network_img/modellll.png" alt="实验流程框架">
+            </div>
+
+            <div style="margin-top: 16px; padding: 14px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
+                <h4 style="margin: 0 0 10px; font-size: 14px; font-weight: 700; color: #1e293b;">
+                    📊 数据获取过程说明
+                </h4>
+                <div style="font-size: 13px; color: #475569; line-height: 1.65;">
+                    <p style="margin: 0 0 10px;">
+                        <strong>数据源：</strong> COCO Val2017 数据集中随机选取 200 张图像
+                    </p>
+                    <p style="margin: 0 0 10px;">
+                        <strong>第一步 - 图像输入：</strong><br>
+                        &nbsp;&nbsp;• 每张图像尺寸标准化为 224×224 像素<br>
+                        &nbsp;&nbsp;• 使用 ImageNet 标准化参数（均值、方差）进行预处理<br>
+                        &nbsp;&nbsp;• 图像分割成 14×14 = 196 个 patch（每个 patch 16×16 像素）
+                    </p>
+                    <p style="margin: 0 0 10px;">
+                        <strong>第二步 - 特征提取（Vision Transformer）：</strong><br>
+                        &nbsp;&nbsp;• 模型：ViT-Base（ImageNet-21k 预训练）<br>
+                        &nbsp;&nbsp;• 通过 12 层 Transformer encoder，提取多头自注意力信息<br>
+                        &nbsp;&nbsp;• 提取方法：计算每个 patch 的<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;- Patch 能量：L2 norm of feature vectors<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;- 特征方差：跨 channels 的方差统计
+                    </p>
+                    <p style="margin: 0 0 10px;">
+                        <strong>第三步 - 注意力聚合：</strong><br>
+                        &nbsp;&nbsp;• 对 200 张图像的注意力权重进行均值聚合<br>
+                        &nbsp;&nbsp;• 生成 14×14 的注意力热力图<br>
+                        &nbsp;&nbsp;• 使用双线性插值将其放大至 16×16 网格以匹配 patch 布局
+                    </p>
+                    <p style="margin: 0 0 10px;">
+                        <strong>第四步 - 非线性变换与规范化：</strong><br>
+                        &nbsp;&nbsp;• 注意力值先进行 min-max 归一化到 [0, 1]<br>
+                        &nbsp;&nbsp;• 应用平方变换（非线性映射）：$a' = a^2$，以强调高注意力区域<br>
+                        &nbsp;&nbsp;• 再次归一化至实际数据范围
+                    </p>
+                    <p style="margin: 0 0 10px;">
+                        <strong>第五步 - 色彩映射：</strong><br>
+                        &nbsp;&nbsp;• 红色（#0c4a6e）: 最低注意力<br>
+                        &nbsp;&nbsp;• 白色（#ffffff）: 最高注意力<br>
+                        &nbsp;&nbsp;• 分段色彩映射，平滑过渡
+                    </p>
+                    <p style="margin: 0 0 10px;">
+                        <strong>第六步 - 骨架关键点标注：</strong><br>
+                        &nbsp;&nbsp;• 在热力图上标记 COCO 标准的 17 个人体关键点<br>
+                        &nbsp;&nbsp;• 关键点位置映射：实际坐标 × 16 → 16×16 网格中的位置
+                    </p>
+                    <p style="margin: 0;">
+                        <strong>最终输出：</strong><br>
+                        &nbsp;&nbsp;• 左图：人体骨架 + 17 个关键点<br>
+                        &nbsp;&nbsp;• 中图：16×16 注意力热力图 + 关键点位置标记<br>
+                        &nbsp;&nbsp;• 右图：模型信息 + 色彩图例 + 统计数据
+                    </p>
+                </div>
+            </div>
+
+            <button class="info-close" data-close="pipeline-info">关闭</button>
         </div>
     </div>
 
@@ -1402,6 +1491,7 @@
     <script type="module" src="./js/pose_view.js"></script>
     <script type="module" src="./js/bias_view.js"></script>
     <script type="module" src="./js/spatial_prior_view.js"></script>
+    <script type="module" src="./js/pose_model_view.js"></script>
     <script>
         const navButtons = Array.from(document.querySelectorAll('.nav-item'));
         const views = Array.from(document.querySelectorAll('.view'));
@@ -1448,6 +1538,10 @@
         semanticBarIcon?.addEventListener('click', () => openModal('bar-info'));
         semanticMatrixIcon?.addEventListener('click', () => openModal('matrix-info'));
         poseInfoBtn?.addEventListener('click', () => openModal('pose-info-modal'));
+        
+        // 绑定实验流程按钮
+        const poseModelPipelineBtn = document.getElementById('pose-model-pipeline-btn');
+        poseModelPipelineBtn?.addEventListener('click', () => openModal('pipeline-info'));
         wireModalClose();
 
         // 绑定“点击查看样本详情”
