@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Loading Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .path-test {
+            margin: 10px 0;
+            padding: 10px;
+            border-left: 4px solid #667eea;
+            background: #f8f9ff;
+        }
+        .success { color: #10b981; font-weight: bold; }
+        .error { color: #ef4444; font-weight: bold; }
+        img {
+            max-width: 200px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>📸 图片加载测试</h1>
+    
+    <div class="test-section">
+        <h2>从 /src/index.html 加载图片测试</h2>
+        <div id="tests"></div>
+    </div>
+
+    <script>
+        const imageId = '000000000785';
+        const imagePaths = [
+            `./visualized/${imageId}_viz.jpg`,
+            `/src/visualized/${imageId}_viz.jpg`,
+            `../src/visualized/${imageId}_viz.jpg`
+        ];
+
+        const testsDiv = document.getElementById('tests');
+
+        imagePaths.forEach((path, index) => {
+            const pathDiv = document.createElement('div');
+            pathDiv.className = 'path-test';
+            pathDiv.innerHTML = `<strong>路径 ${index + 1}:</strong> ${path}<br><span id="status-${index}">🔄 测试中...</span>`;
+            testsDiv.appendChild(pathDiv);
+
+            const img = new Image();
+            img.onload = function() {
+                document.getElementById(`status-${index}`).innerHTML = '<span class="success">✅ 加载成功</span>';
+                const imgEl = document.createElement('img');
+                imgEl.src = path;
+                pathDiv.appendChild(imgEl);
+                console.log(`✓ ${path} - 加载成功`);
+            };
+            img.onerror = function() {
+                document.getElementById(`status-${index}`).innerHTML = '<span class="error">❌ 加载失败</span>';
+                console.error(`✗ ${path} - 加载失败`);
+            };
+            img.src = path;
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>姿势模型 Transformer Cross-Attention 分析</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 40px;
+            min-height: 800px;
+        }
+
+        .panel {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 24px;
+            background: #f8fafc;
+        }
+
+        .panel h2 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #1e293b;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        /* 图像列表面板 */
+        .image-list {
+            max-height: 750px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .image-item {
+            padding: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            gap: 12px;
+        }
+
+        .image-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+        }
+
+        .image-item.active {
+            border-color: #667eea;
+            background: #eef2ff;
+            font-weight: 600;
+        }
+
+        .image-thumbnail {
+            width: 60px;
+            height: 60px;
+            border-radius: 6px;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .image-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .image-name {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 14px;
+        }
+
+        .image-stats {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        .confidence-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .confidence-high {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .confidence-medium {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .confidence-low {
+            background: #fee2e2;
+            color: #7f1d1d;
+        }
+
+        /* 注意力可视化面板 */
+        .attention-canvas {
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .canvas-title {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 14px;
+        }
+
+        .attention-heatmap {
+            width: 100%;
+            max-width: 500px;
+            height: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .keypoint-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .keypoint-btn {
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            color: #1e293b;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .keypoint-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .keypoint-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .attention-info {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 13px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .info-value {
+            color: #1e293b;
+            font-weight: 600;
+        }
+
+        /* 颜色条 */
+        .colorbar {
+            display: flex;
+            gap: 4px;
+            margin: 16px 0;
+            align-items: center;
+        }
+
+        .colorbar-gradient {
+            flex: 1;
+            height: 20px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #1a1a2e 0%, #16213e 25%, #0f3460 50%, #e94560 75%, #ff006e 100%);
+            border: 1px solid #ccc;
+        }
+
+        .colorbar-label {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        /* 加载状态 */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 300px;
+            color: #64748b;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e2e8f0;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 12px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .error-message {
+            padding: 16px;
+            background: #fee2e2;
+            color: #7f1d1d;
+            border-radius: 8px;
+            border: 1px solid #fecaca;
+            margin: 10px 0;
+        }
+
+        svg text {
+            font-size: 12px;
+        }
+
+        .attention-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .stat-card {
+            padding: 12px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 姿势模型 Transformer Cross-Attention 分析</h1>
+            <p>实时可视化 16×16 注意力权重分布</p>
+        </div>
+
+        <div class="content">
+            <!-- 左侧：图像列表 -->
+            <div class="panel">
+                <h2>📸 推理结果列表</h2>
+                <div class="image-list" id="imageList"></div>
+            </div>
+
+            <!-- 右侧：注意力可视化 -->
+            <div class="panel">
+                <h2>🔍 Cross-Attention 热力图 (16×16)</h2>
+                
+                <div class="attention-canvas">
+                    <div class="canvas-title">选择关键点查看注意力分布：</div>
+                    <div class="keypoint-selector" id="keypointSelector"></div>
+
+                    <div id="attentionContainer" style="text-align: center; margin: 20px 0;">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            加载中...
+                        </div>
+                    </div>
+
+                    <!-- 颜色条 -->
+                    <div class="colorbar">
+                        <span class="colorbar-label" style="min-width: 30px;">Low</span>
+                        <div class="colorbar-gradient"></div>
+                        <span class="colorbar-label">High</span>
+                    </div>
+
+                    <!-- 注意力统计信息 -->
+                    <div class="attention-info">
+                        <div class="info-row">
+                            <span class="info-label">当前关键点：</span>
+                            <span class="info-value" id="selectedKeypointName">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">平均注意力权重：</span>
+                            <span class="info-value" id="avgAttention">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">最大注意力权重：</span>
+                            <span class="info-value" id="maxAttention">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">标准差：</span>
+                            <span class="info-value" id="stdAttention">-</span>
+                        </div>
+                        <div class="attention-stats">
+                            <div class="stat-card">
+                                <div class="stat-value" id="topHotspot">-</div>
+                                <div class="stat-label">Top 热点区域</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="entropy">-</div>
+                                <div class="stat-label">熵值</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // COCO关键点名称
+        const KEYPOINT_NAMES = [
+            'nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear',
+            'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow',
+            'left_wrist', 'right_wrist', 'left_hip', 'right_hip',
+            'left_knee', 'right_knee', 'left_ankle', 'right_ankle'
+        ];
+
+        let allImages = [];
+        let currentImage = null;
+        let currentKeypointIdx = 0;
+
+        // 生成模拟Attention数据（16×16）
+        function generateMockAttention() {
+            const attention = [];
+            for (let i = 0; i < 16; i++) {
+                const row = [];
+                for (let j = 0; j < 16; j++) {
+                    // 模拟关键点周围有更高的注意力
+                    const dist = Math.sqrt(Math.pow(i - 8, 2) + Math.pow(j - 8, 2));
+                    const centerAttention = Math.exp(-dist / 4);
+                    const noise = Math.random() * 0.3;
+                    row.push(Math.min(1, centerAttention + noise));
+                }
+                attention.push(row);
+            }
+            return attention;
+        }
+
+        // 加载数据
+        async function loadData() {
+            try {
+                // 加载Attention数据
+                const attentionResponse = await fetch('./data/pose_transformer_attention.json');
+                if (attentionResponse.ok) {
+                    const attentionData = await attentionResponse.json();
+                    allImages = attentionData.images || [];
+                } else {
+                    // 备选：使用模拟数据
+                    allImages = generateMockImageList();
+                }
+
+                if (allImages.length === 0) {
+                    document.getElementById('imageList').innerHTML = '<div class="error-message">未找到推理结果数据</div>';
+                    return;
+                }
+
+                renderImageList();
+                selectImage(0);
+            } catch (error) {
+                console.error('加载数据失败:', error);
+                allImages = generateMockImageList();
+                renderImageList();
+                selectImage(0);
+            }
+        }
+
+        // 生成模拟图像列表
+        function generateMockImageList() {
+            const list = [];
+            for (let i = 0; i < 15; i++) {
+                list.push({
+                    id: i,
+                    image_id: String(i).padStart(12, '0'),
+                    image_path: `./yolo_pose_results/${String(i).padStart(12, '0')}_pose.jpg`,
+                    confidence: 0.75 + Math.random() * 0.25,
+                    keypoints_count: Math.floor(Math.random() * 3) + 1
+                });
+            }
+            return list;
+        }
+
+        // 渲染图像列表
+        function renderImageList() {
+            const listContainer = document.getElementById('imageList');
+            listContainer.innerHTML = '';
+
+            allImages.forEach((img, idx) => {
+                const item = document.createElement('div');
+                item.className = 'image-item';
+                if (idx === 0) item.classList.add('active');
+
+                const confidenceClass = img.confidence >= 0.9 ? 'confidence-high' : 
+                                       img.confidence >= 0.8 ? 'confidence-medium' : 'confidence-low';
+
+                item.innerHTML = `
+                    <img src="./test_images/${img.image_id}.jpg" 
+                         alt="Image ${img.image_id}"
+                         class="image-thumbnail"
+                         onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22%3E%3Crect fill=%22%23e2e8f0%22 width=%2260%22 height=%2260%22/%3E%3Ctext x=%2230%22 y=%2230%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2212%22 fill=%22%2364748b%22%3ENo Image%3C/text%3E%3C/svg%3E'">
+                    <div class="image-info">
+                        <div class="image-name">${img.image_id}</div>
+                        <div class="image-stats">
+                            关键点: ${img.keypoints_count}个
+                            <span class="confidence-badge ${confidenceClass}">
+                                信任度: ${(img.confidence * 100).toFixed(1)}%
+                            </span>
+                        </div>
+                    </div>
+                `;
+
+                item.addEventListener('click', () => selectImage(idx));
+                listContainer.appendChild(item);
+            });
+        }
+
+        // 选择图像
+        function selectImage(idx) {
+            currentImage = allImages[idx];
+            currentKeypointIdx = 0;
+
+            // 更新UI
+            document.querySelectorAll('.image-item').forEach((item, i) => {
+                item.classList.toggle('active', i === idx);
+            });
+
+            renderKeypointSelector();
+            visualizeAttention();
+        }
+
+        // 渲染关键点选择器
+        function renderKeypointSelector() {
+            const selector = document.getElementById('keypointSelector');
+            selector.innerHTML = '';
+
+            KEYPOINT_NAMES.forEach((name, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'keypoint-btn';
+                if (idx === currentKeypointIdx) btn.classList.add('active');
+                btn.textContent = name;
+                btn.addEventListener('click', () => {
+                    currentKeypointIdx = idx;
+                    renderKeypointSelector();
+                    visualizeAttention();
+                });
+                selector.appendChild(btn);
+            });
+        }
+
+        // 可视化Attention热力图
+        function visualizeAttention() {
+            const container = document.getElementById('attentionContainer');
+            container.innerHTML = '';
+
+            // 从当前图像数据中获取Attention
+            let attentionData = null;
+            const keypointName = KEYPOINT_NAMES[currentKeypointIdx];
+            
+            if (currentImage && currentImage.attention_maps && currentImage.attention_maps[keypointName]) {
+                attentionData = currentImage.attention_maps[keypointName];
+            } else {
+                // 备选：生成模拟数据
+                attentionData = generateMockAttention();
+            }
+
+            // 创建SVG热力图
+            const size = 400;
+            const cellSize = size / 16;
+
+            const svg = d3.select(container)
+                .append('svg')
+                .attr('class', 'attention-heatmap')
+                .attr('viewBox', `0 0 ${size} ${size}`)
+                .attr('width', size)
+                .attr('height', size);
+
+            // 颜色比例
+            const colorScale = d3.scaleLinear()
+                .domain([0, 0.5, 1])
+                .range(['#1a1a2e', '#e94560', '#ff006e']);
+
+            // 绘制热力图单元
+            const cells = [];
+            for (let i = 0; i < 16; i++) {
+                for (let j = 0; j < 16; j++) {
+                    const value = attentionData[i][j];
+                    cells.push({
+                        x: j * cellSize,
+                        y: i * cellSize,
+                        value: value,
+                        row: i,
+                        col: j
+                    });
+                }
+            }
+
+            svg.selectAll('rect')
+                .data(cells)
+                .enter()
+                .append('rect')
+                .attr('x', d => d.x)
+                .attr('y', d => d.y)
+                .attr('width', cellSize)
+                .attr('height', cellSize)
+                .attr('fill', d => colorScale(d.value))
+                .attr('stroke', '#ffffff')
+                .attr('stroke-width', 0.5)
+                .on('mouseover', function(event, d) {
+                    d3.select(this)
+                        .attr('stroke-width', 2)
+                        .attr('stroke', '#000');
+                    
+                    // 显示tooltip
+                    const tooltip = document.createElement('div');
+                    tooltip.style.cssText = `
+                        position: absolute;
+                        background: rgba(0,0,0,0.8);
+                        color: white;
+                        padding: 8px 12px;
+                        border-radius: 4px;
+                        font-size: 12px;
+                        pointer-events: none;
+                        z-index: 1000;
+                    `;
+                    tooltip.textContent = `(${d.row}, ${d.col}): ${d.value.toFixed(3)}`;
+                    document.body.appendChild(tooltip);
+                    
+                    tooltip.style.left = event.pageX + 10 + 'px';
+                    tooltip.style.top = event.pageY + 10 + 'px';
+
+                    setTimeout(() => tooltip.remove(), 3000);
+                })
+                .on('mouseout', function() {
+                    d3.select(this)
+                        .attr('stroke-width', 0.5)
+                        .attr('stroke', '#ffffff');
+                });
+
+            // 计算统计信息
+            const values = attentionData.flat();
+            const mean = values.reduce((a, b) => a + b, 0) / values.length;
+            const max = Math.max(...values);
+            const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
+            const std = Math.sqrt(variance);
+            
+            // 计算熵
+            const entropy = -values.reduce((sum, p) => {
+                if (p > 0 && p <= 1) sum += p * Math.log2(p);
+                return sum;
+            }, 0) / Math.log2(values.length);
+
+            // 找到热点区域
+            const sorted = cells.sort((a, b) => b.value - a.value);
+            const topHotspot = `(${sorted[0].row}, ${sorted[0].col})`;
+
+            // 更新信息面板
+            document.getElementById('selectedKeypointName').textContent = keypointName;
+            document.getElementById('avgAttention').textContent = mean.toFixed(4);
+            document.getElementById('maxAttention').textContent = max.toFixed(4);
+            document.getElementById('stdAttention').textContent = std.toFixed(4);
+            document.getElementById('topHotspot').textContent = topHotspot;
+            document.getElementById('entropy').textContent = entropy.toFixed(3);
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', loadData);
+    </script>
+</body>
+</html>

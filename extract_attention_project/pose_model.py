@@ -120,10 +120,16 @@ class PoseTransformerModel(nn.Module):
         
         # 输出头（关键点预测）
         self.norm = nn.LayerNorm(dim)
-        self.keypoint_head = nn.Linear(dim, num_keypoints * 2)
         
-        # 关键点置信度头
-        self.confidence_head = nn.Linear(dim, num_keypoints)
+        # 倒数第二层：将特征映射到 17 个关节节点的特征向量（每个节点 dim 维）
+        # 这是关键点特征的中间表示
+        self.keypoint_features = nn.Linear(dim, num_keypoints * dim)
+        
+        # 倒数第一层：从 17 个关节特征输出关键点坐标和置信度
+        self.keypoint_head = nn.Linear(num_keypoints * dim, num_keypoints * 2)
+        
+        # 关键点置信度头（从关节特征输出）
+        self.confidence_head = nn.Linear(num_keypoints * dim, num_keypoints)
         
         # 热力图头（16x16）
         self.heatmap_head = nn.Sequential(
@@ -158,6 +164,7 @@ class PoseTransformerModel(nn.Module):
             - 'keypoints': 关键点坐标 (B, num_keypoints, 2)
             - 'confidence': 关键点置信度 (B, num_keypoints)
             - 'heatmap': 注意力热力图 (B, 16, 16)
+            - 'keypoint_features': 关键点特征（倒数第二层） (B, num_keypoints, dim)
         """
         B = x.shape[0]
         
@@ -180,12 +187,19 @@ class PoseTransformerModel(nn.Module):
         # 使用类别令牌的输出
         x = self.norm(x[:, 0])  # (B, dim)
         
+        # 倒数第二层：生成 17 个关节节点的特征向量
+        keypoint_features = self.keypoint_features(x)  # (B, num_keypoints * dim)
+        keypoint_features = keypoint_features.reshape(B, self.num_keypoints, self.dim)  # (B, num_keypoints, dim)
+        
+        # 倒数第一层：从关键点特征输出坐标和置信度
+        keypoint_features_flat = keypoint_features.reshape(B, -1)  # (B, num_keypoints * dim)
+        
         # 预测关键点
-        keypoints = self.keypoint_head(x)  # (B, num_keypoints * 2)
+        keypoints = self.keypoint_head(keypoint_features_flat)  # (B, num_keypoints * 2)
         keypoints = keypoints.reshape(B, self.num_keypoints, 2)
         
         # 预测置信度
-        confidence = self.confidence_head(x)  # (B, num_keypoints)
+        confidence = self.confidence_head(keypoint_features_flat)  # (B, num_keypoints)
         confidence = torch.sigmoid(confidence)  # 限制到 [0, 1]
         
         # 生成热力图（注意力机制的可视化）
@@ -196,6 +210,7 @@ class PoseTransformerModel(nn.Module):
             'keypoints': keypoints,
             'confidence': confidence,
             'heatmap': heatmap,
+            'keypoint_features': keypoint_features,  # 倒数第二层特征
         }
         
     def register_attention_hooks(self) -> Dict[int, AttentionHook]:
@@ -232,13 +247,15 @@ class PoseTransformerModel(nn.Module):
 class SimplePoseModel(nn.Module):
     """
     简化的姿态估计模型（用于快速测试）
-    使用 CNN + Transformer 混合架构
+    使用 CNN + FC 混合架构
+    倒数第二层输出 17 个关节节点的特征向量
     """
     
-    def __init__(self, num_keypoints: int = 17):
+    def __init__(self, num_keypoints: int = 17, feature_dim: int = 256):
         super().__init__()
         
         self.num_keypoints = num_keypoints
+        self.feature_dim = feature_dim
         
         # CNN 主干
         self.backbone = nn.Sequential(
@@ -259,16 +276,19 @@ class SimplePoseModel(nn.Module):
         # 自适应池化
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         
-        # 全连接层
-        self.fc = nn.Sequential(
+        # 倒数第二层：生成 17 个关节节点的特征向量（每个 feature_dim 维）
+        self.feature_fc = nn.Sequential(
             nn.Linear(256, 512),
             nn.ReLU(inplace=True),
             nn.Dropout(0.5),
-            nn.Linear(512, num_keypoints * 2),
+            nn.Linear(512, num_keypoints * feature_dim),
         )
         
-        # 置信度预测
-        self.confidence_fc = nn.Linear(512, num_keypoints)
+        # 倒数第一层：从关节特征输出关键点坐标
+        self.keypoint_head = nn.Linear(num_keypoints * feature_dim, num_keypoints * 2)
+        
+        # 置信度预测头
+        self.confidence_head = nn.Linear(num_keypoints * feature_dim, num_keypoints)
         
     def forward(self, x: torch.Tensor) -> Dict[str, torch.Tensor]:
         """前向传播"""
@@ -279,15 +299,18 @@ class SimplePoseModel(nn.Module):
         pooled = self.avgpool(features)  # (B, 256, 1, 1)
         pooled = pooled.flatten(1)  # (B, 256)
         
-        # 全连接层
-        x_fc = torch.cat([pooled, pooled], dim=1)  # (B, 512)
+        # 倒数第二层：生成关键点特征
+        keypoint_features_flat = self.feature_fc(pooled)  # (B, num_keypoints * feature_dim)
+        keypoint_features = keypoint_features_flat.reshape(
+            -1, self.num_keypoints, self.feature_dim
+        )  # (B, num_keypoints, feature_dim)
         
-        # 关键点预测
-        keypoints = self.fc(x_fc)
+        # 倒数第一层：关键点坐标
+        keypoints = self.keypoint_head(keypoint_features_flat)
         keypoints = keypoints.reshape(-1, self.num_keypoints, 2)
         
         # 置信度
-        confidence = torch.sigmoid(self.confidence_fc(x_fc))
+        confidence = torch.sigmoid(self.confidence_head(keypoint_features_flat))
         
         # 简单热力图（基于特征图的平均值）
         heatmap = torch.mean(features, dim=1)  # (B, H//8, W//8)
@@ -301,6 +324,7 @@ class SimplePoseModel(nn.Module):
             'keypoints': keypoints,
             'confidence': confidence,
             'heatmap': heatmap,
+            'keypoint_features': keypoint_features,  # 倒数第二层特征
         }
 
 
@@ -323,14 +347,18 @@ if __name__ == "__main__":
     print(f"关键点形状: {output['keypoints'].shape}")
     print(f"置信度形状: {output['confidence'].shape}")
     print(f"热力图形状: {output['heatmap'].shape}")
+    print(f"关键点特征形状（倒数第二层）: {output['keypoint_features'].shape}")
+    print(f"  -> 包含 17 个关节节点，每个 768 维的特征向量")
     
     print("\n模型参数数量:")
     total_params = sum(p.numel() for p in model.parameters())
     print(f"总参数: {total_params:,}")
     
-    print("\n测试 SimplePoseModel...")
-    simple_model = SimplePoseModel(num_keypoints=17)
+    print("\n\n测试 SimplePoseModel...")
+    simple_model = SimplePoseModel(num_keypoints=17, feature_dim=256)
     output = simple_model(x)
     print(f"关键点形状: {output['keypoints'].shape}")
     print(f"置信度形状: {output['confidence'].shape}")
     print(f"热力图形状: {output['heatmap'].shape}")
+    print(f"关键点特征形状（倒数第二层）: {output['keypoint_features'].shape}")
+    print(f"  -> 包含 17 个关节节点，每个 256 维的特征向量")

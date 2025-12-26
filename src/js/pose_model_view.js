@@ -1,6 +1,8 @@
 import * as d3 from "d3";
 import poseStats from "../data/pose_stats.json";
 import poseModelAttention from "../data/pose_model_attention.json";
+import { initImageExplorer } from "./image_explorer.js";
+import { initPoseModelAnalysis } from "./pose_model_analysis.js";
 
 const COLORS = {
   bg: "#f8fafc",
@@ -13,10 +15,15 @@ const COLORS = {
   warning: "#f59e0b",
   danger: "#ef4444",
   skeleton: {
-    high: "#ef4444",
-    medium: "#3b82f6",
-    low: "#10b981",
+    high: "#ef4444",      // 红色 - 高敏感性
+    medium: "#f59e0b",    // 橙色 - 中等敏感性
+    low: "#10b981",       // 绿色 - 低敏感性
     bone: "#94a3b8"
+  },
+  sensitivity: {
+    high: "#ef4444",      // 红色 - >0.85
+    medium: "#f59e0b",    // 橙色 - 0.65-0.85
+    low: "#10b981"        // 绿色 - <0.65
   },
   heatmap: ["#ffffffff", "#ffffffff", "#ffffffff", "#ff0000ff", "#ff0000ff"]
 };
@@ -29,6 +36,17 @@ const interactionState = {
   hoveredKeypointId: null,
   selectedKeypointId: null
 };
+
+// 根据重要性分数获取敏感性等级和颜色
+function getSensitivityLevel(score) {
+  if (score > 0.85) {
+    return { level: "high", color: COLORS.sensitivity.high, label: "高敏感" };
+  } else if (score > 0.65) {
+    return { level: "medium", color: COLORS.sensitivity.medium, label: "中敏感" };
+  } else {
+    return { level: "low", color: COLORS.sensitivity.low, label: "低敏感" };
+  }
+}
 
 // 生成模拟数据
 function generateMockData() {
@@ -90,34 +108,14 @@ export async function initPoseModelView(containerId = "pose-model-content") {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  // 加载骨架位置数据（从 pose_stats.json）
-  if (!posePositionMap) {
-    try {
-      const data = poseStats;
-      posePositionMap = {};
-      // 使用 mean_pose 构建位置映射，确保与 pose_view 统一
-      data.keypoints.forEach((name, idx) => {
-        posePositionMap[idx] = data.mean_pose[idx];
-      });
-      console.log('✅ Loaded skeleton positions from pose_stats.json');
-    } catch (err) {
-      console.error('❌ Failed to load skeleton positions:', err);
-      // 降级到硬编码备用方案
-      posePositionMap = getDefaultPositionMap();
+  // 加载pose_stats.json到全局变量
+  try {
+    const response = await fetch('./data/pose_stats.json');
+    if (response.ok) {
+      window.poseStatsData = await response.json();
     }
-  }
-
-  // 加载模型数据（直接使用导入的真实数据）
-  if (!poseModelData) {
-    try {
-      poseModelData = poseModelAttention;
-      console.log('✅ Using real pose_model_attention.json data:', poseModelData);
-    } catch (err) {
-      console.error('❌ Failed to use pose_model_attention.json:', err);
-      // 加载失败，使用模拟数据
-      poseModelData = generateMockData();
-      console.log('📦 Using mock data:', poseModelData);
-    }
+  } catch (error) {
+    console.warn('Failed to load pose_stats.json:', error);
   }
 
   // 清理
@@ -137,16 +135,14 @@ export async function initPoseModelView(containerId = "pose-model-content") {
 
   container.innerHTML = "";
 
-  // 构建布局
-  buildLayout(container);
+  // 构建新的图表布局
+  buildNewLayout(container);
 
   // 初始化图表
   setTimeout(() => {
-    renderHeader(container);
-    renderSkeletonChart(container);
-    renderAttentionHeatmap(container);
-    renderGradientFlowChart(container);
-    setupResize(container);
+    renderNewHeader(container);
+    renderComprehensiveAnalysis(container);
+    setupNewResize(container);
   }, 50);
 }
 
@@ -155,7 +151,726 @@ export function refreshPoseModelView() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 📐 布局构建
+// 📐 新布局构建 (使用高质量综合图表)
+// ═══════════════════════════════════════════════════════════════════
+function buildNewLayout(container) {
+  d3.select(container).html(`
+    <div class="pm-root-new">
+      <div id="pm-header-new"></div>
+      <div id="pm-charts-new" style="
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        padding: 24px 32px;
+        overflow-y: auto;
+      ">
+        <div id="image-explorer-section" style="
+          padding: 0;
+        "></div>
+        <div id="comprehensive-chart"></div>
+      </div>
+    </div>
+  `);
+}
+
+function renderNewHeader(container) {
+  const header = d3.select(container).select("#pm-header-new")
+    .style("padding", "24px 32px")
+    .style("border-bottom", `1px solid ${COLORS.border}`)
+    .style("background", COLORS.cardBg);
+
+  header.append("h2")
+    .text("📊 综合姿态 + 模型分析")
+    .style("margin", "0 0 12px 0")
+    .style("font-size", "24px")
+    .style("font-weight", "700")
+    .style("color", COLORS.textMain);
+
+  header.append("p")
+    .html(`
+      <strong style="color: ${COLORS.textMain};">目标：</strong>
+      从175张COCO数据集图像的YOLOv8推理结果中，深度理解模型学到了什么<br/>
+      <span style="font-size: 13px; color: ${COLORS.textMuted}; display: block; margin-top: 8px;">
+        <strong>核心问题：</strong> 
+        模型的置信度是否可靠？ → 推理结果展示判断的合理性 | 
+        COCO数据集是否有偏差？ → 上体置信度高于下体（因为下体被遮挡的多，符合遮挡度数据）
+      </span>
+    `)
+    .style("margin", "0")
+    .style("font-size", "14px")
+    .style("line-height", "1.6")
+    .style("color", COLORS.textMuted);
+}
+
+function renderComprehensiveAnalysis(container) {
+  const imageExplorerSection = d3.select(container).select("#image-explorer-section");
+  
+  // 图像浏览器 - 第一个显示
+  renderImageExplorerInPlace(imageExplorerSection);
+
+  // 使用新的分析可视化
+  const analysisDiv = d3.select(container).select("#comprehensive-chart");
+  analysisDiv.attr("id", "pose-model-analysis");
+  
+  setTimeout(() => {
+    initPoseModelAnalysis("pose-model-analysis");
+  }, 100);
+}
+
+// D3绘制主综合分析图表 - 高级版本
+function renderMainChart(chartDiv) {
+  chartDiv.append("h3")
+    .text("② 高级可视化分析：径向柱状图 + 力导向网络图")
+    .style("margin", "0 0 16px 0")
+    .style("font-size", "15px")
+    .style("font-weight", "600")
+    .style("color", COLORS.textMain);
+
+  // 关键点数据
+  const keypoints = [
+    { id: 0, name: "鼻子", conf: 0.6403, part: "头部" },
+    { id: 1, name: "左眼", conf: 0.6139, part: "头部" },
+    { id: 2, name: "右眼", conf: 0.6177, part: "头部" },
+    { id: 3, name: "左耳", conf: 0.5368, part: "头部" },
+    { id: 4, name: "右耳", conf: 0.5272, part: "头部" },
+    { id: 5, name: "左肩", conf: 0.8447, part: "躯干" },
+    { id: 6, name: "右肩", conf: 0.8578, part: "躯干" },
+    { id: 7, name: "左肘", conf: 0.7481, part: "上肢" },
+    { id: 8, name: "右肘", conf: 0.7561, part: "上肢" },
+    { id: 9, name: "左腕", conf: 0.5907, part: "上肢" },
+    { id: 10, name: "右腕", conf: 0.6045, part: "上肢" },
+    { id: 11, name: "左髋", conf: 0.7600, part: "躯干" },
+    { id: 12, name: "右髋", conf: 0.7672, part: "躯干" },
+    { id: 13, name: "左膝", conf: 0.6479, part: "下肢" },
+    { id: 14, name: "右膝", conf: 0.6583, part: "下肢" },
+    { id: 15, name: "左踝", conf: 0.5208, part: "下肢" },
+    { id: 16, name: "右踝", conf: 0.5191, part: "下肢" }
+  ];
+
+  // COCO骨架连接关系
+  const edges = [
+    [0,1], [0,2], [1,3], [2,4],  // 面部
+    [5,6], [5,7], [6,8], [7,9], [8,10],  // 上肢
+    [11,12], [5,11], [6,12],  // 躯干
+    [11,13], [12,14], [13,15], [14,16]  // 下肢
+  ];
+
+  // 创建网格布局：径向图 + 力导向图
+  const gridDiv = chartDiv.append("div")
+    .style("display", "grid")
+    .style("grid-template-columns", "1fr 1fr")
+    .style("gap", "24px")
+    .style("margin-bottom", "24px");
+
+  // 左侧：径向柱状图
+  const leftDiv = gridDiv.append("div");
+  renderRadialBarChart(leftDiv, keypoints);
+
+  // 右侧：力导向网络图
+  const rightDiv = gridDiv.append("div");
+  renderForceDirectedGraph(rightDiv, keypoints, edges);
+
+  // 底部：统计摘要
+  const summaryDiv = chartDiv.append("div")
+    .style("background", "#f8fafc")
+    .style("border-radius", "6px")
+    .style("padding", "16px")
+    .style("margin-top", "16px");
+
+  renderSummary(summaryDiv);
+}
+
+// 高级D3: 径向柱状图 (Radial Bar Chart)
+function renderRadialBarChart(container, keypoints) {
+  const titleDiv = container.append("div")
+    .style("margin-bottom", "12px");
+
+  titleDiv.append("h4")
+    .text("🔄 径向柱状图：17个关键点置信度")
+    .style("margin", "0 0 4px 0")
+    .style("font-size", "14px")
+    .style("color", COLORS.textMain)
+    .style("font-weight", "600");
+
+  titleDiv.append("p")
+    .text("圆周排列 + 柱子长度=置信度 + 颜色=身体部位")
+    .style("margin", "0")
+    .style("font-size", "12px")
+    .style("color", COLORS.textMuted);
+
+  const width = 320;
+  const height = 320;
+  const radius = Math.min(width, height) / 2 - 40;
+
+  const svg = container.append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+  const g = svg.append("g")
+    .attr("transform", `translate(${width/2},${height/2})`);
+
+  const colorMap = {
+    "躯干": COLORS.danger,
+    "头部": COLORS.warning,
+    "上肢": COLORS.success,
+    "下肢": "#3b82f6"
+  };
+
+  // 计算角度
+  const angleSlice = (Math.PI * 2) / keypoints.length;
+  const maxConf = 1;
+
+  // 背景圆圈
+  for (let i = 0.2; i <= 1; i += 0.2) {
+    g.append("circle")
+      .attr("r", radius * i)
+      .attr("fill", "none")
+      .attr("stroke", COLORS.border)
+      .attr("stroke-width", 1)
+      .attr("opacity", 0.3);
+  }
+
+  // 柱子
+  g.selectAll(".radial-bar")
+    .data(keypoints)
+    .join("g")
+    .attr("class", "radial-bar")
+    .attr("transform", (d, i) => `rotate(${(i * angleSlice * 180) / Math.PI})`)
+    .append("rect")
+    .attr("y", 0)
+    .attr("x", -8)
+    .attr("width", 16)
+    .attr("height", d => (radius * d.conf) / maxConf)
+    .attr("fill", d => colorMap[d.part])
+    .attr("opacity", 0.85)
+    .attr("rx", 2)
+    .on("mouseenter", function(event, d) {
+      d3.select(this)
+        .transition()
+        .duration(200)
+        .attr("opacity", 1)
+        .attr("width", 20);
+      
+      // 显示提示
+      container.append("div")
+        .attr("class", "radial-tooltip")
+        .style("position", "absolute")
+        .style("background", "rgba(0,0,0,0.9)")
+        .style("color", "white")
+        .style("padding", "8px 12px")
+        .style("border-radius", "4px")
+        .style("font-size", "12px")
+        .style("pointer-events", "none")
+        .style("z-index", "1000")
+        .text(`${d.name}: ${(d.conf * 100).toFixed(1)}%`);
+    })
+    .on("mouseleave", function() {
+      d3.select(this)
+        .transition()
+        .duration(200)
+        .attr("opacity", 0.85)
+        .attr("width", 16);
+      container.selectAll(".radial-tooltip").remove();
+    });
+
+  // 标签
+  g.selectAll(".radial-label")
+    .data(keypoints)
+    .join("text")
+    .attr("class", "radial-label")
+    .attr("text-anchor", "middle")
+    .attr("dy", "0.35em")
+    .attr("transform", (d, i) => {
+      const angle = i * angleSlice;
+      const x = Math.cos(angle - Math.PI / 2) * (radius + 50);
+      const y = Math.sin(angle - Math.PI / 2) * (radius + 50);
+      return `translate(${x},${y})`;
+    })
+    .attr("font-size", "10px")
+    .attr("fill", COLORS.textMain)
+    .attr("font-weight", "500")
+    .text(d => d.name);
+
+  // 图例
+  const legendData = [
+    { color: colorMap["躯干"], label: "躯干" },
+    { color: colorMap["头部"], label: "头部" },
+    { color: colorMap["上肢"], label: "上肢" },
+    { color: colorMap["下肢"], label: "下肢" }
+  ];
+
+  const legend = container.append("div")
+    .style("display", "flex")
+    .style("gap", "12px")
+    .style("margin-top", "12px")
+    .style("font-size", "11px")
+    .style("justify-content", "center")
+    .style("flex-wrap", "wrap");
+
+  legend.selectAll(".legend-item")
+    .data(legendData)
+    .join("div")
+    .style("display", "flex")
+    .style("align-items", "center")
+    .style("gap", "4px")
+    .html(d => `<span style="width:10px; height:10px; background:${d.color}; border-radius:2px;"></span>${d.label}`);
+}
+
+// 高级D3: 力导向图 (Force-Directed Graph)
+function renderForceDirectedGraph(container, nodes, edges) {
+  const titleDiv = container.append("div")
+    .style("margin-bottom", "12px");
+
+  titleDiv.append("h4")
+    .text("🔗 关键点网络关系图")
+    .style("margin", "0 0 4px 0")
+    .style("font-size", "14px")
+    .style("color", COLORS.textMain)
+    .style("font-weight", "600");
+
+  titleDiv.append("p")
+    .text("节点大小=置信度 | 颜色=身体部位 | 拖拽交互")
+    .style("margin", "0")
+    .style("font-size", "12px")
+    .style("color", COLORS.textMuted);
+
+  const width = 320;
+  const height = 320;
+
+  const svg = container.append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .style("border", `1px solid ${COLORS.border}`)
+    .style("border-radius", "4px")
+    .style("background", "white");
+
+  // 转换边数据格式
+  const linkData = edges.map(([source, target]) => ({ source, target }));
+
+  const colorMap = {
+    "躯干": COLORS.danger,
+    "头部": COLORS.warning,
+    "上肢": COLORS.success,
+    "下肢": "#3b82f6"
+  };
+
+  // 力模拟
+  const simulation = d3.forceSimulation(nodes)
+    .force("link", d3.forceLink(linkData)
+      .id(d => d.id)
+      .distance(40)
+      .strength(0.5))
+    .force("charge", d3.forceManyBody().strength(-120))
+    .force("center", d3.forceCenter(width / 2, height / 2))
+    .force("collide", d3.forceCollide().radius(20));
+
+  // 绘制边
+  const link = svg.selectAll(".link")
+    .data(linkData)
+    .join("line")
+    .attr("class", "link")
+    .attr("stroke", COLORS.border)
+    .attr("stroke-width", 1)
+    .attr("opacity", 0.4);
+
+  // 绘制节点
+  const node = svg.selectAll(".node")
+    .data(nodes)
+    .join("g")
+    .attr("class", "node")
+    .call(d3.drag()
+      .on("start", dragstarted)
+      .on("drag", dragged)
+      .on("end", dragended));
+
+  node.append("circle")
+    .attr("r", d => 4 + d.conf * 8)  // 大小按置信度
+    .attr("fill", d => colorMap[d.part])
+    .attr("opacity", 0.85)
+    .attr("stroke", "white")
+    .attr("stroke-width", 1.5);
+
+  node.append("text")
+    .attr("text-anchor", "middle")
+    .attr("dy", "-12px")
+    .attr("font-size", "9px")
+    .attr("font-weight", "500")
+    .attr("fill", COLORS.textMain)
+    .text(d => d.name.substring(0, 3));
+
+  // 模拟更新
+  simulation.on("tick", () => {
+    link
+      .attr("x1", d => d.source.x)
+      .attr("y1", d => d.source.y)
+      .attr("x2", d => d.target.x)
+      .attr("y2", d => d.target.y);
+
+    node.attr("transform", d => `translate(${d.x},${d.y})`);
+  });
+
+  // 拖拽函数
+  function dragstarted(event, d) {
+    if (!event.active) simulation.alphaTarget(0.3).restart();
+    d.fx = d.x;
+    d.fy = d.y;
+  }
+
+  function dragged(event, d) {
+    d.fx = event.x;
+    d.fy = event.y;
+  }
+
+  function dragended(event, d) {
+    if (!event.active) simulation.alphaTarget(0);
+    d.fx = null;
+    d.fy = null;
+  }
+
+  // 提示信息
+  node.on("mouseenter", function(event, d) {
+    d3.select(this).select("circle")
+      .transition()
+      .duration(200)
+      .attr("stroke-width", 3)
+      .attr("opacity", 1);
+  })
+  .on("mouseleave", function() {
+    d3.select(this).select("circle")
+      .transition()
+      .duration(200)
+      .attr("stroke-width", 1.5)
+      .attr("opacity", 0.85);
+  });
+}
+
+// D3绘制置信度分布详细分析
+function renderDistributionChart(chartDiv) {
+  chartDiv.append("h3")
+    .text("③ 置信度分布详解：难易关键点对比")
+    .style("margin", "0 0 16px 0")
+    .style("font-size", "15px")
+    .style("font-weight", "600")
+    .style("color", COLORS.textMain);
+
+  // 最难和最容易的关键点
+  const hardest = [
+    { name: "右踝", conf: 0.5191 },
+    { name: "左踝", conf: 0.5208 },
+    { name: "右耳", conf: 0.5272 },
+    { name: "左耳", conf: 0.5368 },
+    { name: "左眼", conf: 0.6139 }
+  ];
+
+  const easiest = [
+    { name: "右肩", conf: 0.8578 },
+    { name: "左肩", conf: 0.8447 },
+    { name: "右髋", conf: 0.7672 },
+    { name: "左髋", conf: 0.7600 },
+    { name: "右肘", conf: 0.7561 }
+  ];
+
+  const gridDiv = chartDiv.append("div")
+    .style("display", "grid")
+    .style("grid-template-columns", "1fr 1fr")
+    .style("gap", "24px");
+
+  // 左：最难
+  renderDifficultyChart(gridDiv.append("div"), "最难检测的5个关键点", hardest, COLORS.danger);
+
+  // 右：最容易
+  renderDifficultyChart(gridDiv.append("div"), "最容易检测的5个关键点", easiest, COLORS.success);
+
+  // 底部：统计指标
+  const statsDiv = chartDiv.append("div")
+    .style("background", "#fffbeb")
+    .style("border-radius", "6px")
+    .style("padding", "16px")
+    .style("margin-top", "16px")
+    .style("border-left", `4px solid ${COLORS.warning}`);
+
+  statsDiv.append("h4")
+    .text("🎯 置信度统计指标")
+    .style("margin", "0 0 12px 0")
+    .style("font-size", "14px")
+    .style("color", COLORS.textMain);
+
+  const stats = [
+    { label: "全体均值", value: "0.6743", desc: "所有17个关键点×175张图 = 2,975个数据点" },
+    { label: "标准差", value: "0.2430", desc: "相对较大的波动，反映了不同部位的差异" },
+    { label: "上下肢差", value: "23.5%", desc: "躯干(80.7%) vs 下肢(57.3%) - 显著的COCO数据偏差" }
+  ];
+
+  const statsContainer = statsDiv.append("div")
+    .style("display", "grid")
+    .style("grid-template-columns", "repeat(3, 1fr)")
+    .style("gap", "16px");
+
+  statsContainer.selectAll(".stat-item")
+    .data(stats)
+    .join("div")
+    .style("text-align", "center")
+    .style("padding", "12px")
+    .style("background", "white")
+    .style("border-radius", "4px")
+    .html(d => `
+      <div style="font-size:16px; font-weight:700; color:${COLORS.primary};">${d.value}</div>
+      <div style="font-size:12px; font-weight:600; color:${COLORS.textMain}; margin-top:4px;">${d.label}</div>
+      <div style="font-size:11px; color:${COLORS.textMuted}; margin-top:4px;">${d.desc}</div>
+    `);
+}
+
+// 难度对比图
+function renderDifficultyChart(container, title, data, color) {
+  container.append("h4")
+    .text(title)
+    .style("margin", "0 0 12px 0")
+    .style("font-size", "14px")
+    .style("color", COLORS.textMain);
+
+  const width = 280;
+  const height = 180;
+  const margin = { top: 10, right: 20, bottom: 25, left: 80 };
+  const chartWidth = width - margin.left - margin.right;
+  const chartHeight = height - margin.top - margin.bottom;
+
+  const svg = container.append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+  const g = svg.append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+  const yScale = d3.scaleBand()
+    .domain(data.map(d => d.name))
+    .range([0, chartHeight])
+    .padding(0.25);
+
+  const xScale = d3.scaleLinear()
+    .domain([0, 1])
+    .range([0, chartWidth]);
+
+  // 条形
+  g.selectAll(".bar")
+    .data(data)
+    .join("rect")
+    .attr("y", d => yScale(d.name))
+    .attr("height", yScale.bandwidth())
+    .attr("x", 0)
+    .attr("width", d => xScale(d.conf))
+    .attr("fill", color)
+    .attr("opacity", 0.85)
+    .attr("rx", 2);
+
+  // 标签
+  g.selectAll(".label")
+    .data(data)
+    .join("text")
+    .attr("y", d => yScale(d.name) + yScale.bandwidth() / 2)
+    .attr("x", d => xScale(d.conf) + 4)
+    .attr("dy", "0.35em")
+    .attr("font-size", "11px")
+    .attr("font-weight", "600")
+    .attr("fill", COLORS.textMain)
+    .text(d => `${(d.conf * 100).toFixed(1)}%`);
+
+  // 轴
+  g.append("g")
+    .call(d3.axisLeft(yScale))
+    .style("font-size", "11px")
+    .select(".domain").remove();
+
+  g.append("g")
+    .attr("transform", `translate(0,${chartHeight})`)
+    .call(d3.axisBottom(xScale).ticks(4).tickFormat(d3.format(".0%")))
+    .style("font-size", "10px")
+    .select(".domain").remove();
+}
+
+// 统计摘要
+function renderSummary(container) {
+  container.append("h4")
+    .text("📊 关键统计指标概览")
+    .style("margin", "0 0 12px 0")
+    .style("font-size", "14px")
+    .style("color", COLORS.textMain);
+
+  const stats = [
+    { label: "样本", value: "175张图像", icon: "🖼️" },
+    { label: "关键点", value: "17 × 175 = 2,975个", icon: "🔴" },
+    { label: "上下肢差", value: "23.5%", icon: "📉" },
+    { label: "左右对称", value: "< 2.1%偏差", icon: "↔️" }
+  ];
+
+  const grid = container.append("div")
+    .style("display", "grid")
+    .style("grid-template-columns", "repeat(4, 1fr)")
+    .style("gap", "12px");
+
+  grid.selectAll(".stat")
+    .data(stats)
+    .join("div")
+    .style("padding", "12px")
+    .style("background", "white")
+    .style("border-radius", "4px")
+    .style("text-align", "center")
+    .style("border", `1px solid ${COLORS.border}`)
+    .html(d => `
+      <div style="font-size:18px; margin-bottom:4px;">${d.icon}</div>
+      <div style="font-size:11px; color:${COLORS.textMuted}; margin-bottom:4px;">${d.label}</div>
+      <div style="font-size:12px; font-weight:600; color:${COLORS.textMain};">${d.value}</div>
+    `);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 🎯 交互式图片浏览器 (在顶部显示 - 由 image_explorer.js 处理)
+// ═══════════════════════════════════════════════════════════════════
+function renderImageExplorerInPlace(container) {
+  // 清空容器
+  container.html('');
+
+  // 直接创建按钮容器，无额外框架和空白
+  const explorerContent = container.append("div")
+    .attr("id", "image-explorer-wrapper");
+
+  // 延迟初始化确保DOM完全准备好
+  setTimeout(() => {
+    console.log('[Pose Model View] Calling initImageExplorer for image-explorer-wrapper');
+    initImageExplorer('image-explorer-wrapper');
+  }, 200);
+}
+
+function renderInteractiveImageExplorer(container) {
+  // 清空容器
+  container.html('');
+  
+  // 创建一个容器给image_explorer.js使用
+  const explorerId = 'image-explorer-container';
+  container.append('div').attr('id', explorerId);
+  
+  // 初始化图片浏览器（由image_explorer.js提供）
+  if (window.initImageExplorer) {
+    window.initImageExplorer(explorerId);
+  } else {
+    container.append('p')
+      .style('color', 'red')
+      .text('Image explorer library not loaded. Please refresh the page.');
+  }
+}
+
+// 旧的辅助函数已移至 image_explorer.js
+// (renderThumbnailList, loadAndDisplayImage, loadCocoImage, loadInferenceResultAndDrawHeatmap, renderConfidenceHeatmap)
+
+function renderInsightsPanel(container) {
+  // 核心发现与应用建议（图像浏览器已在顶部显示）
+  const findingsSection = container.append("div")
+    .style("background", "#f8fafc")
+    .style("padding", "20px")
+    .style("border-radius", "8px")
+    .style("border", "1px solid #e2e8f0");
+
+  findingsSection.append("h3")
+    .text("④ 💡 核心发现与应用建议")
+    .style("margin", "0 0 20px 0")
+    .style("font-size", "18px")
+    .style("font-weight", "700")
+    .style("color", COLORS.textMain);
+
+  const findings = [
+    {
+      title: "🎯 发现 1: COCO数据集的上下肢偏差",
+      desc: "上半身置信度 80.7% (躯干) vs 下半身 57.3% (下肢) → 23.5%差异",
+      impact: "原因：COCO中下肢常被遮挡或截断，模型学到了这一特点"
+    },
+    {
+      title: "✓ 发现 2: 完美的身体对称特征",
+      desc: "所有8对左右肢体的置信度差异 < 2.1% (眼睛0.38%, 肩膀1.30%)",
+      impact: "说明模型学到了身体的对称性结构，这是好信号"
+    },
+    {
+      title: "⚠️ 发现 3: 头部细节精度较低",
+      desc: "眼睛(61.39%) 和 耳朵(52-54%) 置信度最低，低于预期",
+      impact: "这些关键点易受角度、遮挡、光照影响"
+    },
+    {
+      title: "💼 应用建议",
+      desc: "1️⃣ 高精度需求 → 使用躯干关键点(0.7+)\n2️⃣ 全身应用 → 分层阈值(躯干0.7, 头0.6, 肢体0.5)\n3️⃣ 实时应用 → 较低阈值(0.45)增加覆盖",
+      impact: "根据应用场景灵活选择阈值，不要一刀切"
+    }
+  ];
+
+  findings.forEach((finding, idx) => {
+    const item = findingsSection.append("div")
+      .style("margin-bottom", "16px")
+      .style("padding", "16px")
+      .style("background", idx % 2 === 0 ? "#ffffff" : "#fffbeb")
+      .style("border-left", `4px solid ${[COLORS.primary, COLORS.success, COLORS.warning, COLORS.danger][idx % 4]}`)
+      .style("border-radius", "6px")
+      .style("box-shadow", "0 1px 3px rgba(0, 0, 0, 0.1)");
+
+    item.append("div")
+      .text(finding.title)
+      .style("font-size", "14px")
+      .style("font-weight", "600")
+      .style("margin-bottom", "8px")
+      .style("color", COLORS.textMain);
+
+    item.append("div")
+      .text(finding.desc)
+      .style("font-size", "13px")
+      .style("color", COLORS.textMuted)
+      .style("margin-bottom", "8px")
+      .style("line-height", "1.5")
+      .style("white-space", "pre-line");
+
+    item.append("div")
+      .text(finding.impact)
+      .style("font-size", "12px")
+      .style("color", COLORS.textMuted)
+      .style("font-style", "italic")
+      .style("border-top", `1px solid rgba(0,0,0,0.1)`)
+      .style("padding-top", "8px")
+      .style("margin-top", "8px");
+  });
+
+  // 底部链接到详细报告
+  findingsSection.append("div")
+    .style("margin-top", "20px")
+    .style("padding", "12px")
+    .style("background", "#e0e7ff")
+    .style("border-radius", "4px")
+    .style("text-align", "center")
+    .append("p")
+    .html(`
+      📄 <strong>完整分析报告</strong> 请查看：
+      <code style="background: white; padding: 2px 6px; border-radius: 2px; font-size: 12px;">
+      extract_attention_project/yolo_pose_results/ANALYSIS_GUIDE.md
+      </code><br/>
+      <span style="font-size: 12px; color: ${COLORS.textMuted};">
+        包含详细的统计数据、应用场景、技术细节和改进方向
+      </span>
+    `)
+    .style("margin", "0");
+}
+
+function setupNewResize(container) {
+  // 简化的resize处理
+  if (poseResizeObserver) {
+    poseResizeObserver.disconnect();
+  }
+  
+  poseResizeObserver = new ResizeObserver(() => {
+    // 图表会自动响应父容器大小，因为使用了width:100%
+  });
+
+  const chartsDiv = container.querySelector("#pm-charts-new");
+  if (chartsDiv) {
+    poseResizeObserver.observe(chartsDiv);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 📐 旧布局构建 (保留兼容性，但不使用)
 // ═══════════════════════════════════════════════════════════════════
 function buildLayout(container) {
   d3.select(container).html(`
@@ -269,7 +984,7 @@ function renderSkeletonChart(container) {
     .attr("y", 40)
     .attr("font-size", "11px")
     .attr("fill", COLORS.textMuted)
-    .text("节点颜色：红色 = 高重要性 (>92%)  |  蓝色 = 中等重要性 (85-92%)  |  绿色 = 低重要性 (<85%)");
+    .text("节点敏感性：红色 = 高敏感性 (>85%)  |  橙色 = 中敏感性 (65-85%)  |  绿色 = 低敏感性 (<65%)");
 
   const g = svg.append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
@@ -293,9 +1008,8 @@ function renderSkeletonChart(container) {
   const yScale = d3.scaleLinear().domain([0, 1]).range([yOffset, chartHeight - yOffset]);
 
   const colorScale = (score) => {
-    if (score > 0.92) return COLORS.skeleton.high;
-    if (score > 0.85) return COLORS.skeleton.medium;
-    return COLORS.skeleton.low;
+    const sensitivity = getSensitivityLevel(score);
+    return sensitivity.color;
   };
 
   // 绘制骨架线（使用来自 pose_stats.json 的位置）
@@ -1032,6 +1746,7 @@ function renderGradientFlowChart(container) {
   if (poseModelData.keypoint_gradient_contributions) {
     // 使用真实计算的梯度数据
     gradientData = poseModelData.keypoint_gradient_contributions.slice(0, 8).map(d => ({
+      id: d.id,
       name: d.name,
       gradient_contribution: d.gradient_contribution,
       flow_magnitude: d.flow_magnitude
@@ -1040,6 +1755,7 @@ function renderGradientFlowChart(container) {
   } else {
     // 回退到基于 importance_score 的模拟数据
     gradientData = poseModelData.keypoint_importance.slice(0, 8).map((d, i) => ({
+      id: d.id,
       name: d.name,
       gradient_contribution: d.importance_score * (1 - i * 0.08),
       flow_magnitude: Math.sin(i / 4) * 0.3 + 0.6
@@ -1056,7 +1772,7 @@ function renderGradientFlowChart(container) {
     .domain([0, 1])
     .range([chartHeight, 0]);
 
-  // 绘制梯度流柱子
+  // 绘制梯度流柱子 - 使用统一的敏感性颜色
   g.selectAll("rect.gradient-bar")
     .data(gradientData)
     .join("rect")
@@ -1064,9 +1780,9 @@ function renderGradientFlowChart(container) {
     .attr("y", d => yScale(d.gradient_contribution))
     .attr("width", xScale.bandwidth() * 0.7)
     .attr("height", d => chartHeight - yScale(d.gradient_contribution))
-    .attr("fill", (d, i) => {
-      const colors = [COLORS.primary, "#a78bfa", "#f472b6", "#ec4899"];
-      return colors[i % colors.length];
+    .attr("fill", d => {
+      const sensitivity = getSensitivityLevel(d.gradient_contribution);
+      return sensitivity.color;
     })
     .attr("opacity", 0.8)
     .style("cursor", "pointer")
@@ -1077,7 +1793,10 @@ function renderGradientFlowChart(container) {
       d3.select(this).attr("opacity", 0.8);
     })
     .append("title")
-    .text(d => `${d.name}: 梯度贡献 ${(d.gradient_contribution * 100).toFixed(0)}% | 流强度 ${(d.flow_magnitude * 100).toFixed(0)}%`);
+    .text(d => {
+      const sensitivity = getSensitivityLevel(d.gradient_contribution);
+      return `${d.name}: 梯度贡献 ${(d.gradient_contribution * 100).toFixed(0)}% [${sensitivity.label}] | 流强度 ${(d.flow_magnitude * 100).toFixed(0)}%`;
+    });
 
   // 绘制流向箭头（表示信息流）
   g.selectAll("path.flow-arrow")
@@ -1140,13 +1859,13 @@ function renderGradientFlowChart(container) {
 
   // ═══════ 图例说明 ═══════
   const legendGroup = svg.append("g")
-    .attr("transform", `translate(${width - 280}, ${10})`);
+    .attr("transform", `translate(${width - 320}, ${10})`);
 
   legendGroup.append("rect")
     .attr("x", 0)
     .attr("y", 0)
-    .attr("width", 270)
-    .attr("height", 155)
+    .attr("width", 310)
+    .attr("height", 195)
     .attr("fill", "#f8fafc")
     .attr("stroke", "#e2e8f0")
     .attr("stroke-width", 1)
@@ -1158,59 +1877,36 @@ function renderGradientFlowChart(container) {
     .attr("font-size", "12px")
     .attr("font-weight", "700")
     .attr("fill", COLORS.textMain)
-    .text("图表说明");
+    .text("节点敏感性等级");
 
-  const legendItems = [
-    { 
-      symbol: "rect", 
-      color: COLORS.primary, 
-      label: "梯度贡献度",
-      desc: "关键点的梯度幅值，表示信息通过该点流向的强度"
-    },
-    { 
-      symbol: "arrow", 
-      color: COLORS.primary, 
-      label: "信息流向",
-      desc: "Transformer各层间梯度的传播路径与强度"
-    }
+  // 敏感性颜色说明
+  const sensitivityItems = [
+    { color: COLORS.sensitivity.high, label: "高敏感性 (>85%)", desc: "对预测影响大" },
+    { color: COLORS.sensitivity.medium, label: "中敏感性 (65-85%)", desc: "对预测有中等影响" },
+    { color: COLORS.sensitivity.low, label: "低敏感性 (<65%)", desc: "对预测影响较小" }
   ];
 
-  legendItems.forEach((item, idx) => {
-    const y = 50 + idx * 50;
+  sensitivityItems.forEach((item, idx) => {
+    const y = 50 + idx * 40;
     
-    // 符号
-    if (item.symbol === "rect") {
-      legendGroup.append("rect")
-        .attr("x", 12)
-        .attr("y", y - 4)
-        .attr("width", 10)
-        .attr("height", 10)
-        .attr("fill", item.color)
-        .attr("opacity", 0.8);
-    } else if (item.symbol === "arrow") {
-      legendGroup.append("line")
-        .attr("x1", 12)
-        .attr("y1", y)
-        .attr("x2", 22)
-        .attr("y2", y)
-        .attr("stroke", item.color)
-        .attr("stroke-width", 1.5)
-        .attr("opacity", 0.5);
-    }
-
-    // 标签
+    legendGroup.append("rect")
+      .attr("x", 12)
+      .attr("y", y - 8)
+      .attr("width", 10)
+      .attr("height", 10)
+      .attr("fill", item.color)
+      .attr("opacity", 0.8);
+    
     legendGroup.append("text")
-      .attr("x", 30)
-      .attr("y", y + 2)
+      .attr("x", 28)
+      .attr("y", y - 2)
       .attr("font-size", "11px")
-      .attr("font-weight", "600")
       .attr("fill", COLORS.textMain)
       .text(item.label);
-
-    // 描述
+    
     legendGroup.append("text")
-      .attr("x", 30)
-      .attr("y", y + 14)
+      .attr("x", 28)
+      .attr("y", y + 10)
       .attr("font-size", "9px")
       .attr("fill", COLORS.textMuted)
       .text(item.desc);

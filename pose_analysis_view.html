@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>姿态 + 模型分析</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+        }
+
+        header {
+            background: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 24px 32px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        main {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 32px;
+        }
+
+        .chart-container {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+
+        svg {
+            overflow: visible;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>📊 姿态 + 模型分析</h1>
+        <p class="subtitle">
+            通过三个关联图表深度理解Transformer模型决策机制与人体结构关系<br/>
+            基于175张COCO数据集图像的YOLOv8推理结果分析
+        </p>
+    </header>
+
+    <main>
+        <div id="analysis-container" class="analysis-grid"></div>
+    </main>
+
+    <script type="module">
+        import { initPoseModelAnalysis } from './js/pose_model_analysis.js';
+        
+        // 初始化分析可视化
+        setTimeout(() => {
+            const container = document.getElementById('analysis-container');
+            container.innerHTML = '<div id="pose-analysis"></div>';
+            initPoseModelAnalysis('pose-analysis');
+        }, 100);
+    </script>
+</body>
+</html>

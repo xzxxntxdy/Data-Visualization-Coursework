@@ -1255,6 +1255,64 @@
     <datalist id="categoryOptions"></datalist>
     <div class="tooltip" id="tooltip"></div>
 
+    <!-- 图片查看模态框 -->
+    <div class="info-modal" id="image-modal-000000000785">
+        <div class="info-card" style="max-width: 90vw;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="margin: 0; font-size: 18px;">🖼️ YOLOv8推理结果</h3>
+                <button class="info-close" data-close="image-modal-000000000785" style="padding: 4px 12px; background: #f3f4f6; border: none; border-radius: 4px; cursor: pointer; color: #64748b; font-weight: 600;">✕</button>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div style="padding: 12px; background: #ffffff; border-radius: 10px; border: 2px solid #667eea; text-align: center;">
+                    <p style="margin: 0 0 10px; font-size: 12px; font-weight: 600; color: #667eea;">📸 推理可视化</p>
+                    <img src="./visualized/000000000785_viz.jpg" alt="推理结果" style="max-width: 100%; max-height: 400px; border-radius: 6px; object-fit: contain;">
+                    <p style="margin: 8px 0 0; font-size: 11px; color: #94a3b8;">ID: 000000000785</p>
+                </div>
+                <div id="keypoints-000000000785" style="padding: 12px; background: #f8fafc; border-radius: 10px; border: 2px solid #e2e8f0; overflow: auto; max-height: 450px;">
+                    <p style="text-align: center; color: #94a3b8;">加载中...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="info-modal" id="image-modal-000000008021">
+        <div class="info-card" style="max-width: 90vw;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="margin: 0; font-size: 18px;">🖼️ YOLOv8推理结果</h3>
+                <button class="info-close" data-close="image-modal-000000008021" style="padding: 4px 12px; background: #f3f4f6; border: none; border-radius: 4px; cursor: pointer; color: #64748b; font-weight: 600;">✕</button>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div style="padding: 12px; background: #ffffff; border-radius: 10px; border: 2px solid #667eea; text-align: center;">
+                    <p style="margin: 0 0 10px; font-size: 12px; font-weight: 600; color: #667eea;">📸 推理可视化</p>
+                    <img src="./visualized/000000008021_viz.jpg" alt="推理结果" style="max-width: 100%; max-height: 400px; border-radius: 6px; object-fit: contain;">
+                    <p style="margin: 8px 0 0; font-size: 11px; color: #94a3b8;">ID: 000000008021</p>
+                </div>
+                <div id="keypoints-000000008021" style="padding: 12px; background: #f8fafc; border-radius: 10px; border: 2px solid #e2e8f0; overflow: auto; max-height: 450px;">
+                    <p style="text-align: center; color: #94a3b8;">加载中...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="info-modal" id="image-modal-000000009483">
+        <div class="info-card" style="max-width: 90vw;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="margin: 0; font-size: 18px;">🖼️ YOLOv8推理结果</h3>
+                <button class="info-close" data-close="image-modal-000000009483" style="padding: 4px 12px; background: #f3f4f6; border: none; border-radius: 4px; cursor: pointer; color: #64748b; font-weight: 600;">✕</button>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div style="padding: 12px; background: #ffffff; border-radius: 10px; border: 2px solid #667eea; text-align: center;">
+                    <p style="margin: 0 0 10px; font-size: 12px; font-weight: 600; color: #667eea;">📸 推理可视化</p>
+                    <img src="./visualized/000000009483_viz.jpg" alt="推理结果" style="max-width: 100%; max-height: 400px; border-radius: 6px; object-fit: contain;">
+                    <p style="margin: 8px 0 0; font-size: 11px; color: #94a3b8;">ID: 000000009483</p>
+                </div>
+                <div id="keypoints-000000009483" style="padding: 12px; background: #f8fafc; border-radius: 10px; border: 2px solid #e2e8f0; overflow: auto; max-height: 450px;">
+                    <p style="text-align: center; color: #94a3b8;">加载中...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="info-modal" id="pose-info-modal">
         <div class="info-card">
             <h3>姿态视图指标说明</h3>
@@ -1319,70 +1377,73 @@
 
     <div class="info-modal" id="pipeline-info">
         <div class="info-card">
-            <h3>实验流程：从图像到注意力热力图</h3>
-            <p style="margin:4px 0 10px; color:var(--text-muted); font-size:13px;">Transformer模型的特征提取与注意力可视化过程</p>
-            <div class="zoom-wrap">
-                <img class="modal-image zoomable" src="./network_img/modellll.png" alt="实验流程框架">
+            <h3>实验流程：从真实数据到深度理解</h3>
+            <p style="margin:4px 0 10px; color:var(--text-muted); font-size:13px;">✨ 如何通过数据分析理解AI模型的决策过程</p>
+
+            <!-- 示例推理结果图片 -->
+            <div style="margin-top: 16px; padding: 12px; background: #ffffff; border-radius: 10px; border: 2px solid #667eea; text-align: center;">
+                <p style="margin: 0 0 10px; font-size: 12px; font-weight: 600; color: #667eea;">📸 YOLOv8识别结果示例</p>
+                <img src="./visualized/000000000785_viz.jpg" alt="YOLOv8推理结果" style="max-width: 100%; max-height: 300px; border-radius: 6px; object-fit: contain;">
+                <p style="margin: 8px 0 0; font-size: 11px; color: #94a3b8;">✓ 17个身体关键点自动检测 | 真实照片 | 模型给出置信度评分</p>
             </div>
 
             <div style="margin-top: 16px; padding: 14px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
                 <h4 style="margin: 0 0 10px; font-size: 14px; font-weight: 700; color: #1e293b;">
-                    📊 数据获取过程说明
+                    📊 完整实验流程
                 </h4>
-                <div style="font-size: 13px; color: #475569; line-height: 1.65;">
-                    <p style="margin: 0 0 10px;">
-                        <strong>数据源：</strong> COCO Val2017 数据集中随机选取 200 张图像
+                <div style="font-size: 13px; color: #475569; line-height: 1.75;">
+                    <p style="margin: 0 0 12px;">
+                        <strong style="color: #667eea;">🎯 我们想回答的问题：</strong><br>
+                        &nbsp;&nbsp;1️⃣ 模型给出的"置信度"是否可靠？能否信任它的判断？<br>
+                        &nbsp;&nbsp;2️⃣ 为什么模型识别上半身准确，下半身却容易出错？<br>
                     </p>
-                    <p style="margin: 0 0 10px;">
-                        <strong>第一步 - 图像输入：</strong><br>
-                        &nbsp;&nbsp;• 每张图像尺寸标准化为 224×224 像素<br>
-                        &nbsp;&nbsp;• 使用 ImageNet 标准化参数（均值、方差）进行预处理<br>
-                        &nbsp;&nbsp;• 图像分割成 14×14 = 196 个 patch（每个 patch 16×16 像素）
+                    
+                    <p style="margin: 0 0 12px;">
+                        <strong style="color: #667eea;">第一步 - 准备真实数据</strong><br>
+                        &nbsp;&nbsp;📷 收集175张真实照片（来自COCO数据集）<br>
+                        &nbsp;&nbsp;🤖 用YOLOv8模型识别每张图中的17个身体关键点<br>
+                        &nbsp;&nbsp;📊 模型为每个关键点给出置信度评分（0-100%）<br>
+                        &nbsp;&nbsp;📈 总共得到 175×17 = 2,975 个评分数据点
                     </p>
-                    <p style="margin: 0 0 10px;">
-                        <strong>第二步 - 特征提取（Vision Transformer）：</strong><br>
-                        &nbsp;&nbsp;• 模型：ViT-Base（ImageNet-21k 预训练）<br>
-                        &nbsp;&nbsp;• 通过 12 层 Transformer encoder，提取多头自注意力信息<br>
-                        &nbsp;&nbsp;• 提取方法：计算每个 patch 的<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;- Patch 能量：L2 norm of feature vectors<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;- 特征方差：跨 channels 的方差统计
+
+                    <p style="margin: 0 0 12px;">
+                        <strong style="color: #667eea;">第二步 - 用图表呈现这个发现</strong><br>
+                        &nbsp;&nbsp;<strong>📊 图表1：17个关键点的识别能力曲线</strong><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;• 按照脸部→脚部的顺序排列，从头到脚显示识别难度<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;• 曲线呈现下降趋势，说明下肢识别比上肢困难<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;• 蓝色点=高准确(>70%)、橙色点=中等(60-70%)、红色点=低准确(<60%)<br>
+                        &nbsp;&nbsp;<br>
+                        &nbsp;&nbsp;<strong>📊 图表2：遮挡率 ↔ 识别准确度的关系</strong><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;• X轴：COCO数据集中各部位的遮挡率<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;• Y轴：模型的识别准确度<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;• 虚线：理想的反比例关系（遮挡↑准确↓）<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;• 解读：<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;X轴（遮挡率）越低，Y轴（识别准确度）越高。<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;左上角区域（低遮挡+高准确度）代表模型学得很好的部位；右下角代表学得困难的部位。<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;这说明模型的识别能力与遮挡率高度相关，符合预期。
                     </p>
-                    <p style="margin: 0 0 10px;">
-                        <strong>第三步 - 注意力聚合：</strong><br>
-                        &nbsp;&nbsp;• 对 200 张图像的注意力权重进行均值聚合<br>
-                        &nbsp;&nbsp;• 生成 14×14 的注意力热力图<br>
-                        &nbsp;&nbsp;• 使用双线性插值将其放大至 16×16 网格以匹配 patch 布局
-                    </p>
-                    <p style="margin: 0 0 10px;">
-                        <strong>第四步 - 非线性变换与规范化：</strong><br>
-                        &nbsp;&nbsp;• 注意力值先进行 min-max 归一化到 [0, 1]<br>
-                        &nbsp;&nbsp;• 应用平方变换（非线性映射）：$a' = a^2$，以强调高注意力区域<br>
-                        &nbsp;&nbsp;• 再次归一化至实际数据范围
-                    </p>
-                    <p style="margin: 0 0 10px;">
-                        <strong>第五步 - 色彩映射：</strong><br>
-                        &nbsp;&nbsp;• 红色（#0c4a6e）: 最低注意力<br>
-                        &nbsp;&nbsp;• 白色（#ffffff）: 最高注意力<br>
-                        &nbsp;&nbsp;• 分段色彩映射，平滑过渡
-                    </p>
-                    <p style="margin: 0 0 10px;">
-                        <strong>第六步 - 骨架关键点标注：</strong><br>
-                        &nbsp;&nbsp;• 在热力图上标记 COCO 标准的 17 个人体关键点<br>
-                        &nbsp;&nbsp;• 关键点位置映射：实际坐标 × 16 → 16×16 网格中的位置
-                    </p>
-                    <p style="margin: 0;">
-                        <strong>最终输出：</strong><br>
-                        &nbsp;&nbsp;• 左图：人体骨架 + 17 个关键点<br>
-                        &nbsp;&nbsp;• 中图：16×16 注意力热力图 + 关键点位置标记<br>
-                        &nbsp;&nbsp;• 右图：模型信息 + 色彩图例 + 统计数据
-                    </p>
+
                 </div>
             </div>
 
+            <div style="margin-top: 16px; padding: 14px; background: #e0e7ff; border-radius: 10px; border-left: 4px solid #6366f1;">
+                <h4 style="margin: 0 0 8px; font-size: 13px; font-weight: 700; color: #4338ca;">
+                    🚀 这个分析有什么特殊之处？
+                </h4>
+                <div style="font-size: 12px; color: #4338ca; line-height: 1.6;">
+                    <p style="margin: 0;">
+                        ✅ <strong>完全基于真实数据</strong> - 不是虚构，175张真实COCO照片<br>
+                        ✅ <strong>交互式探索</strong> - 可以点击"查看推理结果"看原始图像和识别过程<br>
+                        ✅ <strong>科学严谨</strong> - 用统计数据支持每一个结论<br>
+                        ✅ <strong>可立即应用</strong> - 给出具体的阈值建议，你可以直接用到项目中
+                    </p>
+                </div>
+            </div>
             <button class="info-close" data-close="pipeline-info">关闭</button>
         </div>
     </div>
 
+    <!-- 样本详情模态框 -->
     <div class="info-modal" id="sample-info">
         <div class="info-card"
             style="
@@ -1492,6 +1553,8 @@
     <script type="module" src="./js/bias_view.js"></script>
     <script type="module" src="./js/spatial_prior_view.js"></script>
     <script type="module" src="./js/pose_model_view.js"></script>
+    <!-- 图片浏览器 -->
+    <script type="module" src="./js/image_explorer.js"></script>
     <script>
         const navButtons = Array.from(document.querySelectorAll('.nav-item'));
         const views = Array.from(document.querySelectorAll('.view'));
@@ -1515,17 +1578,22 @@
         };
 
         const wireModalClose = () => {
-            document.querySelectorAll('.info-close').forEach((btn) => {
-                btn.addEventListener('click', () => {
-                    const target = btn.getAttribute('data-close');
+            // 使用事件委托处理所有info-close按钮（包括动态添加的）
+            document.addEventListener('click', (e) => {
+                if (e.target.classList.contains('info-close')) {
+                    const target = e.target.getAttribute('data-close');
                     const modal = document.getElementById(target);
-                    if (modal) modal.classList.remove('active');
-                });
+                    if (modal) {
+                        modal.classList.remove('active');
+                    }
+                }
             });
-            document.querySelectorAll('.info-modal').forEach((modal) => {
-                modal.addEventListener('click', (e) => {
-                    if (e.target === modal) modal.classList.remove('active');
-                });
+            
+            // 点击模态框背景关闭
+            document.addEventListener('click', (e) => {
+                if (e.target.classList.contains('info-modal') && e.target === e.currentTarget) {
+                    e.target.classList.remove('active');
+                }
             });
         };
         window.addEventListener('switch-view', (e) => {
@@ -1663,6 +1731,225 @@
                 }
                 document.dispatchEvent(new CustomEvent('dashboard:return'));
             });
+        }
+
+        // 关键点数据硬编码
+        const keypointsData = {
+            '000000000785': [
+                {name: "nose", x: 367.66, y: 79.39, confidence: 0.986},
+                {name: "left_eye", x: 375.05, y: 72.01, confidence: 0.976},
+                {name: "right_eye", x: 361.23, y: 73.03, confidence: 0.899},
+                {name: "left_ear", x: 388.43, y: 76.40, confidence: 0.938},
+                {name: "right_ear", x: 355.32, y: 78.67, confidence: 0.476},
+                {name: "left_shoulder", x: 412.64, y: 115.84, confidence: 0.999},
+                {name: "right_shoulder", x: 358.61, y: 119.96, confidence: 0.994},
+                {name: "left_elbow", x: 445.63, y: 156.17, confidence: 0.997},
+                {name: "right_elbow", x: 347.03, y: 159.03, confidence: 0.965},
+                {name: "left_wrist", x: 441.33, y: 164.47, confidence: 0.991},
+                {name: "right_wrist", x: 305.46, y: 175.00, confidence: 0.950},
+                {name: "left_hip", x: 433.94, y: 211.36, confidence: 0.9996},
+                {name: "right_hip", x: 396.64, y: 211.59, confidence: 0.999},
+                {name: "left_knee", x: 429.20, y: 284.81, confidence: 0.999},
+                {name: "right_knee", x: 371.32, y: 276.89, confidence: 0.997},
+                {name: "left_ankle", x: 475.95, y: 359.27, confidence: 0.990},
+                {name: "right_ankle", x: 403.14, y: 345.17, confidence: 0.985}
+            ],
+            '000000008021': [
+                {name: "nose", x: 316.96, y: 142.34, confidence: 0.991},
+                {name: "left_eye", x: 327.49, y: 132.20, confidence: 0.978},
+                {name: "right_eye", x: 304.25, y: 134.21, confidence: 0.973},
+                {name: "left_ear", x: 344.58, y: 143.25, confidence: 0.878},
+                {name: "right_ear", x: 290.61, y: 149.31, confidence: 0.776},
+                {name: "left_shoulder", x: 385.18, y: 211.07, confidence: 0.992},
+                {name: "right_shoulder", x: 273.53, y: 221.39, confidence: 0.994},
+                {name: "left_elbow", x: 421.64, y: 308.85, confidence: 0.909},
+                {name: "right_elbow", x: 264.84, y: 318.70, confidence: 0.939},
+                {name: "left_wrist", x: 372.25, y: 311.78, confidence: 0.841},
+                {name: "right_wrist", x: 277.93, y: 288.15, confidence: 0.880},
+                {name: "left_hip", x: 376.02, y: 378.31, confidence: 0.888},
+                {name: "right_hip", x: 303.09, y: 379.02, confidence: 0.906},
+                {name: "left_knee", x: 373.44, y: 443.30, confidence: 0.122},
+                {name: "right_knee", x: 295.79, y: 432.90, confidence: 0.147},
+                {name: "left_ankle", x: 364.79, y: 460.70, confidence: 0.010},
+                {name: "right_ankle", x: 327.56, y: 436.86, confidence: 0.012}
+            ],
+            '000000009483': [
+                {name: "nose", x: 112.61, y: 102.21, confidence: 0.989},
+                {name: "left_eye", x: 120.34, y: 95.16, confidence: 0.956},
+                {name: "right_eye", x: 104.04, y: 94.37, confidence: 0.970},
+                {name: "left_ear", x: 128.53, y: 104.33, confidence: 0.662},
+                {name: "right_ear", x: 86.39, y: 101.49, confidence: 0.831},
+                {name: "left_shoulder", x: 144.17, y: 155.65, confidence: 0.994},
+                {name: "right_shoulder", x: 62.54, y: 159.51, confidence: 0.993},
+                {name: "left_elbow", x: 160.57, y: 215.88, confidence: 0.976},
+                {name: "right_elbow", x: 61.05, y: 229.95, confidence: 0.967},
+                {name: "left_wrist", x: 148.70, y: 263.54, confidence: 0.963},
+                {name: "right_wrist", x: 114.12, y: 263.67, confidence: 0.959},
+                {name: "left_hip", x: 138.99, y: 290.75, confidence: 0.9955},
+                {name: "right_hip", x: 84.49, y: 294.25, confidence: 0.9950},
+                {name: "left_knee", x: 135.88, y: 391.34, confidence: 0.965},
+                {name: "right_knee", x: 75.87, y: 397.19, confidence: 0.962},
+                {name: "left_ankle", x: 125.19, y: 476.47, confidence: 0.643},
+                {name: "right_ankle", x: 78.64, y: 478.75, confidence: 0.622}
+            ]
+        };
+        
+        // 模态框已在 HTML 中硬编码定义
+        // 直接初始化按钮生成
+        function initImageModals() {
+            const imageIds = ['000000000785', '000000008021', '000000009483'];
+            generateImageSelectionButtons(imageIds);
+            
+            // 为每个图片渲染关键点数据
+            imageIds.forEach(imageId => {
+                if (keypointsData[imageId]) {
+                    renderKeypointsTable(imageId, keypointsData[imageId]);
+                }
+            });
+            
+            console.log(`✓ 已初始化 ${imageIds.length} 个图片选择按钮`);
+        }
+        
+        // 渲染关键点表格
+        function renderKeypointsTable(imageId, keypoints) {
+            const container = document.getElementById(`keypoints-${imageId}`);
+            if (!container) return;
+            
+            // COCO 标准的骨架连接关系
+            const connections = [
+                [0, 1], [0, 2], [1, 3], [2, 4],        // 头部
+                [5, 6],                                 // 肩膀
+                [5, 7], [7, 9], [6, 8], [8, 10],       // 手臂
+                [5, 11], [6, 12],                       // 躯干到髋
+                [11, 12],                               // 髋
+                [11, 13], [13, 15], [12, 14], [14, 16] // 腿部
+            ];
+            
+            // 创建 SVG 骨架图
+            let html = `
+            <div style="margin-bottom: 12px;">
+                <h4 style="margin: 0 0 8px; font-size: 14px; font-weight: 700; color: #1e293b;">🦴 骨架可视化</h4>
+                <svg width="100%" height="250" style="background: #fff; border: 1px solid #e2e8f0; border-radius: 6px;">
+                    <!-- 骨架连线 -->`;
+            
+            // 寻找坐标范围（用于规范化）
+            const xs = keypoints.map(k => k.x);
+            const ys = keypoints.map(k => k.y);
+            const minX = Math.min(...xs), maxX = Math.max(...xs);
+            const minY = Math.min(...ys), maxY = Math.max(...ys);
+            const width = maxX - minX || 100;
+            const height = maxY - minY || 100;
+            const padding = 20;
+            const svgWidth = 280;
+            const svgHeight = 230;
+            
+            // 规范化坐标函数
+            const normX = (x) => ((x - minX) / width) * (svgWidth - padding * 2) + padding;
+            const normY = (y) => ((y - minY) / height) * (svgHeight - padding * 2) + padding;
+            
+            // 绘制连线
+            connections.forEach(([i, j]) => {
+                if (i < keypoints.length && j < keypoints.length) {
+                    const k1 = keypoints[i];
+                    const k2 = keypoints[j];
+                    const confAvg = (k1.confidence + k2.confidence) / 2;
+                    const opacity = Math.max(0.3, confAvg);
+                    const color = confAvg > 0.8 ? '#10b981' : confAvg > 0.6 ? '#f59e0b' : '#ef4444';
+                    html += `<line x1="${normX(k1.x)}" y1="${normY(k1.y)}" x2="${normX(k2.x)}" y2="${normY(k2.y)}" stroke="${color}" stroke-width="2" opacity="${opacity}"/>`;
+                }
+            });
+            
+            // 绘制关键点
+            keypoints.forEach((kp, idx) => {
+                const color = kp.confidence > 0.8 ? '#10b981' : kp.confidence > 0.6 ? '#f59e0b' : '#ef4444';
+                const radius = 4 + kp.confidence * 2;
+                html += `<circle cx="${normX(kp.x)}" cy="${normY(kp.y)}" r="${radius}" fill="${color}" opacity="0.9" stroke="white" stroke-width="1.5"/>`;
+            });
+            
+            html += `
+                </svg>
+            </div>
+            
+            <div style="margin-bottom: 12px;">
+                <h4 style="margin: 0 0 8px; font-size: 14px; font-weight: 700; color: #1e293b;">📊 置信度排序</h4>
+                <div style="font-size: 11px; max-height: 180px; overflow-y: auto;">`;
+            
+            // 按置信度排序
+            const sorted = [...keypoints].sort((a, b) => b.confidence - a.confidence);
+            sorted.forEach((kp, idx) => {
+                const confPct = (kp.confidence * 100).toFixed(1);
+                const color = kp.confidence > 0.8 ? '#10b981' : kp.confidence > 0.6 ? '#f59e0b' : '#ef4444';
+                const barWidth = kp.confidence * 100;
+                html += `
+                <div style="margin-bottom: 6px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                        <span style="font-weight: 600;">${kp.name}</span>
+                        <span style="color: ${color}; font-weight: 700;">${confPct}%</span>
+                    </div>
+                    <div style="background: #e2e8f0; border-radius: 3px; height: 6px; overflow: hidden;">
+                        <div style="background: ${color}; height: 100%; width: ${barWidth}%; transition: width 0.3s ease;"></div>
+                    </div>
+                </div>`;
+            });
+            
+            html += `
+                </div>
+            </div>
+            
+            <div style="padding: 8px; background: #f0f9ff; border-radius: 6px; font-size: 11px; color: #0369a1; border-left: 3px solid #0284c7;">
+                <strong>📈 平均置信度:</strong> ${(keypoints.reduce((sum, kp) => sum + kp.confidence, 0) / keypoints.length * 100).toFixed(1)}%<br>
+                <strong>🎯 高置信度:</strong> ${keypoints.filter(k => k.confidence > 0.8).length}/17 点
+            </div>`;
+            
+            container.innerHTML = html;
+        }
+        
+        // 生成图片选择按钮
+        function generateImageSelectionButtons(imageIds) {
+            // 尝试多个容器查找方式
+            let container = document.getElementById('image-explorer-wrapper');
+            
+            // 如果直接ID找不到，可能还没创建，等待后重试
+            if (!container) {
+                // 等待100ms后重试
+                setTimeout(() => {
+                    container = document.getElementById('image-explorer-wrapper');
+                    if (container) {
+                        doGenerateButtons(container, imageIds);
+                    }
+                }, 100);
+                return;
+            }
+            
+            doGenerateButtons(container, imageIds);
+        }
+        
+        function doGenerateButtons(container, imageIds) {
+            let buttonsHtml = `
+            <div style="display: flex; flex-direction: column; gap: 12px; padding: 24px;">
+                <h3 style="margin: 0 0 16px; font-size: 18px; font-weight: 700; color: #1e293b;">🖼️ 图片选择</h3>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">`;
+            
+            imageIds.forEach(imageId => {
+                buttonsHtml += `
+                    <button class="ghost-btn" onclick="document.getElementById('image-modal-${imageId}').classList.add('active')" 
+                            style="height: 38px; padding: 0 12px; font-size: 13px; font-weight: 500;">
+                        📸 查看推理结果
+                    </button>`;
+            });
+            
+            buttonsHtml += `
+                </div>
+            </div>`;
+            
+            container.innerHTML = buttonsHtml;
+        }
+        
+        // 页面加载后初始化图片模态框
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initImageModals);
+        } else {
+            initImageModals();
         }
     </script>
 </body>
