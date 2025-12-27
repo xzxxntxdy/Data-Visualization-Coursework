@@ -77,9 +77,9 @@ export function renderKeypointAccuracyChart(container) {
     return orderA - orderB;
   });
   
-  const margin = { top: 30, right: 30, bottom: 80, left: 60 };
-  const width = 1200 - margin.left - margin.right;
-  const height = 400 - margin.top - margin.bottom;
+  const margin = { top: 30, right: 30, bottom: 100, left: 55 };
+  const width = 580 - margin.left - margin.right;
+  const height = 380 - margin.top - margin.bottom;
 
   // 清空容器
   d3.select(container).html("");
@@ -247,33 +247,30 @@ export function renderKeypointAccuracyChart(container) {
       svg.selectAll(".keypoint-label").remove();
     });
 
-  // 标题 - 改进的样式
+  // 标题 - 紧凑样式
   d3.select(container).insert("div", ":first-child")
-    .style("padding", "12px 16px")
-    .style("margin", "-24px -24px 16px -24px")
+    .style("padding", "10px 14px")
+    .style("margin", "-20px -20px 12px -20px")
     .style("background", "linear-gradient(90deg, #667eea15 0%, transparent 100%)")
     .style("border-bottom", "2px solid #667eea30")
-    .style("font-size", "16px")
+    .style("font-size", "14px")
     .style("font-weight", "700")
     .style("color", "#1e293b")
-    .html("📊 17个关键点的平均置信度曲线（11万张）");
+    .html("📊 17个关键点平均置信度（11万张）");
 
-  // 说明 - 改进的展示
+  // 说明 - 紧凑展示
   d3.select(container).append("div")
-    .style("padding", "12px 16px")
-    .style("margin", "16px -24px -24px -24px")
+    .style("padding", "10px 14px")
+    .style("margin", "12px -20px -20px -20px")
     .style("background", "#f8fafc")
     .style("border-top", "1px solid #e2e8f0")
     .style("border-radius", "0 0 12px 12px")
-    .style("font-size", "12px")
+    .style("font-size", "11px")
     .style("color", "#64748b")
-    .style("line-height", "1.6")
+    .style("line-height", "1.5")
     .html(
-      "💡 <strong>数据来源</strong>：基于117,877张新图片上的157,773个人物检测。" +
-      "按从头到脚的解剖学顺序排列。曲线呈现下降趋势说明从头部到脚部识别难度逐步增加。" +
-      "蓝色点表示高置信度 &gt;70%，这些关键点在大多数图像中清晰可见；" +
-      "红色点表示置信度 &lt;60%，通常因为被遮挡、离镜头远或运动模糊。" +
-      "<strong>鼠标悬停点查看详细信息</strong>。"
+      "💡 按解剖学顺序排列，曲线下降趋势说明从头到脚识别难度递增。" +
+      "<strong>悬停查看详情</strong>"
     );
 }
 
@@ -304,9 +301,9 @@ export function renderBodyRegionComparison(container) {
     }
   }
 
-  const margin = { top: 40, right: 40, bottom: 60, left: 70 };
-  const width = 650 - margin.left - margin.right;
-  const height = 400 - margin.top - margin.bottom;
+  const margin = { top: 40, right: 30, bottom: 55, left: 55 };
+  const width = 580 - margin.left - margin.right;
+  const height = 380 - margin.top - margin.bottom;
 
   // 清空容器
   d3.select(container).html("");
@@ -337,12 +334,12 @@ export function renderBodyRegionComparison(container) {
   // X轴标签
   svg.append("text")
     .attr("x", width / 2)
-    .attr("y", height + 45)
+    .attr("y", height + 42)
     .attr("text-anchor", "middle")
-    .style("font-size", "13px")
+    .style("font-size", "11px")
     .style("font-weight", "600")
     .style("fill", "#475569")
-    .text("COCO 2017数据集 人物关键点真实可见度");
+    .text("COCO关键点可见度 (%)");
 
   // Y轴 - YOLO模型在117K张新图片上的推测置信度
   const yScale = d3.scaleLinear()
@@ -364,10 +361,10 @@ export function renderBodyRegionComparison(container) {
     .attr("x", 0 - (height / 2))
     .attr("dy", "1em")
     .style("text-anchor", "middle")
-    .style("font-size", "13px")
+    .style("font-size", "11px")
     .style("font-weight", "600")
     .style("fill", "#475569")
-    .text("YOLO模型在11万张图片上的推测的各节点平均置信度");
+    .text("YOLO平均置信度");
 
   // 参考区域背景 - 高COCO可见度高置信度区
   svg.append("rect")
@@ -379,13 +376,13 @@ export function renderBodyRegionComparison(container) {
     .attr("opacity", 0.08);
 
   svg.append("text")
-    .attr("x", width - 10)
+    .attr("x", width - 5)
     .attr("y", 15)
     .attr("text-anchor", "end")
-    .style("font-size", "11px")
+    .style("font-size", "10px")
     .style("fill", "#22c55e")
     .style("opacity", 0.6)
-    .text("COCO可见+模型高置信区");
+    .text("高可见+高置信区");
 
   // 网格线
   svg.append("g")
@@ -408,12 +405,12 @@ export function renderBodyRegionComparison(container) {
     .attr("opacity", 0.5);
 
   svg.append("text")
-    .attr("x", xScale(32))
+    .attr("x", xScale(30))
     .attr("y", yScale(0.62) - 8)
-    .style("font-size", "11px")
+    .style("font-size", "10px")
     .style("fill", "#94a3b8")
     .style("opacity", 0.7)
-    .text("理想趋势线（可见度↑置信度↑）");
+    .text("理想趋势线");
 
   // 散点 - 改进的交互设计
   const bubbleGroup = svg.selectAll(".bubble-group")
@@ -586,33 +583,30 @@ export function renderBodyRegionComparison(container) {
 
   // 注：标签已移到hover时的工具提示中显示，默认不显示以保持图表简洁
 
-  // 标题 - 改进的样式
+  // 标题 - 紧凑样式
   d3.select(container).insert("div", ":first-child")
-    .style("padding", "12px 16px")
-    .style("margin", "-24px -24px 16px -24px")
+    .style("padding", "10px 14px")
+    .style("margin", "-20px -20px 12px -20px")
     .style("background", "linear-gradient(90deg, #48bb7815 0%, transparent 100%)")
     .style("border-bottom", "2px solid #48bb7830")
-    .style("font-size", "16px")
+    .style("font-size", "14px")
     .style("font-weight", "700")
     .style("color", "#1e293b")
-    .html("🔗 COCO数据集可见度 ↔ YOLO模型置信度");
+    .html("🔗 COCO可见度 vs YOLO置信度");
 
-  // 说明 - 改进的展示
+  // 说明 - 紧凑展示
   d3.select(container).append("div")
-    .style("padding", "12px 16px")
-    .style("margin", "16px -24px -24px -24px")
+    .style("padding", "10px 14px")
+    .style("margin", "12px -20px -20px -20px")
     .style("background", "#f8fafc")
     .style("border-top", "1px solid #e2e8f0")
     .style("border-radius", "0 0 12px 12px")
-    .style("font-size", "12px")
+    .style("font-size", "11px")
     .style("color", "#64748b")
-    .style("line-height", "1.6")
+    .style("line-height", "1.5")
     .html(
-      "💡 <strong>结论</strong>：" +
-      "关键点的可见度直接影响模型的识别能力。遮挡越多、物体越小，识别就越难——这很正常。" +
-      "从散点图可以看出，YOLO已经完全'学会'了COCO训练集的特征分布，" +
-      "置信度高低主要取决于训练数据中该关键点的标注质量和充分度，而不是新数据的实际难度。" +
-      "<strong>鼠标悬停气泡查看详细数据</strong>。"
+      "💡 YOLO已学会COCO训练集的特征分布，置信度取决于标注质量。" +
+      "<strong>悬停查看详情</strong>"
     );
 }
 
@@ -626,32 +620,20 @@ export function initPoseModelAnalysis(containerId) {
     return;
   }
 
-  // 创建增强的布局
+  // 创建增强的布局 - 两个图表并排
   container.innerHTML = `
-
-    <!-- 快速导航 -->
-    <div style="
-      display: flex;
-      gap: 12px;
-      margin-bottom: 24px;
-      padding: 16px;
-      background: #f8fafc;
-      border-radius: 8px;
-    ">
-      <div style="flex: 1;"></div>
-    </div>
-
-    <!-- 图表容器 -->
-    <div style="display: grid; grid-template-columns: 1fr; gap: 24px;">
+    <!-- 图表容器 - 并排布局 -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
       <!-- 图表1 -->
       <div id="chart1" style="
         background: #ffffff;
         border: 2px solid #e2e8f0;
         border-radius: 12px;
-        padding: 24px;
+        padding: 20px;
         box-shadow: 0 2px 12px rgba(0,0,0,0.05);
         transition: all 300ms ease;
         position: relative;
+        min-height: 480px;
       "></div>
 
       <!-- 图表2 -->
@@ -659,11 +641,53 @@ export function initPoseModelAnalysis(containerId) {
         background: #ffffff;
         border: 2px solid #e2e8f0;
         border-radius: 12px;
-        padding: 24px;
+        padding: 20px;
         box-shadow: 0 2px 12px rgba(0,0,0,0.05);
         transition: all 300ms ease;
         position: relative;
+        min-height: 480px;
       "></div>
+    </div>
+    
+    <!-- 相关实验链接 -->
+    <div style="
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 24px;
+      padding: 16px;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    ">
+      <button id="pose-link-bias" style="
+        padding: 10px 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+      ">
+        ← 查看类别先验实验 (ResNet)
+      </button>
+      <button id="pose-link-spatial" style="
+        padding: 10px 20px;
+        background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(72, 187, 120, 0.3);
+      ">
+        查看空间先验实验 (Transformer) →
+      </button>
     </div>
   `;
 
@@ -673,23 +697,23 @@ export function initPoseModelAnalysis(containerId) {
 
   // 为图表1添加图例
   const legend1HTML = `
-    <div style="position: absolute; top: 50px; right: 40px; background: rgba(255,255,255,0.95); padding: 24px 32px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 22px; color: #64748b; line-height: 2.0;">
-      <div style="font-weight: 600; margin-bottom: 12px;">📊 置信度分布</div>
-      <div style="margin-bottom: 8px;"><span style="display: inline-block; width: 16px; height: 16px; background: #667eea; border-radius: 50%; vertical-align: middle; margin-right: 10px;"></span>蓝色 >70%</div>
-      <div style="margin-bottom: 8px;"><span style="display: inline-block; width: 16px; height: 16px; background: #ed8936; border-radius: 50%; vertical-align: middle; margin-right: 10px;"></span>橙色 60-70%</div>
-      <div><span style="display: inline-block; width: 16px; height: 16px; background: #f56565; border-radius: 50%; vertical-align: middle; margin-right: 10px;"></span>红色 <60%</div>
+    <div style="position: absolute; top: 50px; right: 25px; background: rgba(255,255,255,0.95); padding: 10px 14px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 11px; color: #64748b; line-height: 1.8;">
+      <div style="font-weight: 600; margin-bottom: 6px; font-size: 12px;">📊 置信度</div>
+      <div style="margin-bottom: 4px;"><span style="display: inline-block; width: 10px; height: 10px; background: #667eea; border-radius: 50%; vertical-align: middle; margin-right: 6px;"></span>>70%</div>
+      <div style="margin-bottom: 4px;"><span style="display: inline-block; width: 10px; height: 10px; background: #ed8936; border-radius: 50%; vertical-align: middle; margin-right: 6px;"></span>60-70%</div>
+      <div><span style="display: inline-block; width: 10px; height: 10px; background: #f56565; border-radius: 50%; vertical-align: middle; margin-right: 6px;"></span><60%</div>
     </div>
   `;
   d3.select("#chart1").insert("div", ":first-child").html(legend1HTML);
 
   // 为图表2添加图例
   const legend2HTML = `
-    <div style="position: absolute; top: 50px; right: 40px; background: rgba(255,255,255,0.95); padding: 24px 32px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 22px; color: #64748b; line-height: 2.0;">
-      <div style="font-weight: 600; margin-bottom: 12px;">🔗 身体部位</div>
-      <div style="margin-bottom: 8px;"><span style="display: inline-block; width: 16px; height: 16px; background: #667eea; border-radius: 50%; vertical-align: middle; margin-right: 10px;"></span>蓝色 头部</div>
-      <div style="margin-bottom: 8px;"><span style="display: inline-block; width: 16px; height: 16px; background: #ed8936; border-radius: 50%; vertical-align: middle; margin-right: 10px;"></span>橙色 上肢</div>
-      <div style="margin-bottom: 8px;"><span style="display: inline-block; width: 16px; height: 16px; background: #48bb78; border-radius: 50%; vertical-align: middle; margin-right: 10px;"></span>绿色 躯干</div>
-      <div><span style="display: inline-block; width: 16px; height: 16px; background: #f56565; border-radius: 50%; vertical-align: middle; margin-right: 10px;"></span>红色 下肢</div>
+    <div style="position: absolute; top: 50px; right: 25px; background: rgba(255,255,255,0.95); padding: 10px 14px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 11px; color: #64748b; line-height: 1.8;">
+      <div style="font-weight: 600; margin-bottom: 6px; font-size: 12px;">🔗 部位</div>
+      <div style="margin-bottom: 4px;"><span style="display: inline-block; width: 10px; height: 10px; background: #667eea; border-radius: 50%; vertical-align: middle; margin-right: 6px;"></span>头部</div>
+      <div style="margin-bottom: 4px;"><span style="display: inline-block; width: 10px; height: 10px; background: #ed8936; border-radius: 50%; vertical-align: middle; margin-right: 6px;"></span>上肢</div>
+      <div style="margin-bottom: 4px;"><span style="display: inline-block; width: 10px; height: 10px; background: #48bb78; border-radius: 50%; vertical-align: middle; margin-right: 6px;"></span>躯干</div>
+      <div><span style="display: inline-block; width: 10px; height: 10px; background: #f56565; border-radius: 50%; vertical-align: middle; margin-right: 6px;"></span>下肢</div>
     </div>
   `;
   d3.select("#chart2").insert("div", ":first-child").html(legend2HTML);
@@ -708,6 +732,37 @@ export function initPoseModelAnalysis(containerId) {
       card.style.borderColor = "#e2e8f0";
     });
   });
+
+  // 相关实验链接按钮事件
+  const biasBtn = document.getElementById("pose-link-bias");
+  if (biasBtn) {
+    biasBtn.addEventListener("mouseenter", () => {
+      biasBtn.style.transform = "translateY(-2px)";
+      biasBtn.style.boxShadow = "0 4px 12px rgba(102, 126, 234, 0.4)";
+    });
+    biasBtn.addEventListener("mouseleave", () => {
+      biasBtn.style.transform = "translateY(0)";
+      biasBtn.style.boxShadow = "0 2px 8px rgba(102, 126, 234, 0.3)";
+    });
+    biasBtn.addEventListener("click", () => {
+      window.dispatchEvent(new CustomEvent("switch-view", { detail: "bias-view" }));
+    });
+  }
+
+  const spatialBtn = document.getElementById("pose-link-spatial");
+  if (spatialBtn) {
+    spatialBtn.addEventListener("mouseenter", () => {
+      spatialBtn.style.transform = "translateY(-2px)";
+      spatialBtn.style.boxShadow = "0 4px 12px rgba(72, 187, 120, 0.4)";
+    });
+    spatialBtn.addEventListener("mouseleave", () => {
+      spatialBtn.style.transform = "translateY(0)";
+      spatialBtn.style.boxShadow = "0 2px 8px rgba(72, 187, 120, 0.3)";
+    });
+    spatialBtn.addEventListener("click", () => {
+      window.dispatchEvent(new CustomEvent("switch-view", { detail: "spatial-prior-view" }));
+    });
+  }
 
   console.log("✓ 姿态 + 模型分析可视化初始化完成");
 }

@@ -581,7 +581,7 @@ function renderSingleHeatmap(containerId, data, type) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  const size = Math.min(container.clientWidth, container.clientHeight, 180);
+  const size = Math.min(container.clientWidth, container.clientHeight, 500);
   const gridSize = data.length;
   const cellSize = size / gridSize;
 
@@ -1096,8 +1096,8 @@ function injectStyles() {
     }
 
     .sp-heatmap {
-      width: 180px;
-      height: 180px;
+      width: 350px;
+      height: 350px;
       background: ${COLORS.bg};
       border-radius: 8px;
       display: flex;

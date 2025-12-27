@@ -16,6 +16,7 @@
 - [快速开始](#-快速开始)
 - [数据处理](#-数据处理)
 - [视图详解](#-视图详解)
+- [实验分析](#-实验分析)
 - [技术栈](#-技术栈)
 - [项目结构](#-项目结构)
 - [常见问题](#-常见问题)
@@ -90,6 +91,46 @@ COCO (Common Objects in Context) 是计算机视觉领域最具影响力的大�
 - **关键点环形图**：各关键点的可见性统计分布
 - **骨架连接可视化**：标准 COCO 骨架拓扑结构
 - **场景过滤**：按共现物体筛选姿态子集
+
+### 🧪 模型偏差实验分析 (Model Bias Analysis)
+
+<p align="center">
+  <img src="assets/类别先验偏差分析.png" alt="Model Bias Analysis" width="80%">
+</p>
+
+深入探究神经网络的"固有偏见"：
+
+- **实验设计**：给 ResNet-18 输入完全无语义信息的图像（纯黑/纯白 Tensor）
+- **惊人发现**：即使输入无任何信息，模型依然输出极高的 `person` 置信度（纯黑 54%，纯白 80%）
+- **核心洞察**：揭示 COCO 数据集的类别分布偏差——因为数据集中 "人" 类图片数量极多，网络学到了"如果不知道是什么，猜是人准没错"的先验概率
+- **ResNet-18 架构可视化**：清晰展示模型结构与推理流程
+
+### 🔬 空间先验实验 (Spatial Prior Experiment)
+
+<p align="center">
+  <img src="assets/空间先验实验.png" alt="Spatial Prior Experiment" width="80%">
+</p>
+
+探索 Grounding Transformer 学习到的空间位置偏差：
+
+- **实验核心问题**：当给训练好的目标检测 Transformer 输入完全随机的噪声图像时，用某个类别作为 Query Token，模型的注意力会均匀分布吗？
+- **热力图对比**：GT 真实分布 vs 模型注意力 vs 差异图
+- **高相关性验证**：平均相关性达 86.7%，证明模型学习到了数据集的空间先验
+- **77 个类别测试**：完整的相关性排行榜，支持交互选择查看
+- **结论**：即使输入是无意义的噪声，模型依然会将注意力集中在该类别统计上最可能出现的区域
+
+### 🎯 综合姿态 + 模型分析 (Pose Model Analysis)
+
+<p align="center">
+  <img src="assets/综合姿态及模型分析.png" alt="Pose Model Analysis" width="80%">
+</p>
+
+从 11 万张 COCO 数据集图像的 YOLOv8 姿态推理结果中，深度理解模型学到了什么：
+
+- **YOLOv8 姿态推理示例**：轮播展示真实图片的推理可视化结果，包含 17 个关键点的置信度
+- **17 个关键点平均置信度图**：展示各关键点在海量数据上的置信度分布规律
+- **COCO 可见度 vs YOLO 置信度散点图**：揭示模型预测与真实标注的相关性
+- **核心洞察**：上肢置信度高于下肢（因为下体被遮挡较多），符合遮挡度效应
 
 ---
 
@@ -243,6 +284,63 @@ person_keypoints_train2017.json                             (17 关键点统计)
 
 -----
 
+## 🔬 实验分析
+
+本项目包含三个深度实验，探究深度学习模型从数据集中学到的隐性偏差：
+
+### 1\. 模型偏差实验 (ResNet-18 类别先验)
+
+**实验目的**：验证神经网络是否学习到了数据集的类别分布偏差
+
+**实验设计**：
+- 输入：完全无语义的纯色 Tensor（纯黑 `torch.zeros` / 纯白 `torch.ones`）
+- 模型：在 COCO 多标签分类任务上训练的 ResNet-18
+- 输出：80 个类别的预测概率
+
+**关键发现**：
+| 输入类型 | Person 预测概率 | 结论 |
+|----------|-----------------|------|
+| 纯黑 Tensor | 54.0% | 模型有强烈的 "人" 类先验 |
+| 纯白 Tensor | 80.1% | 先验偏差更加明显 |
+
+**意义**：揭示了 COCO 数据集中 "person" 类别占比过高导致的模型偏差
+
+### 2\. 空间先验实验 (Grounding Transformer)
+
+**实验目的**：验证目标检测 Transformer 是否学习到了类别的空间位置偏差
+
+**实验设计**：
+- 输入：随机噪声图像 `torch.randn(1, 3, 256, 256)`
+- Query：各类别的 embedding
+- 提取：Cross-Attention 权重，reshape 为 16×16 空间分布
+
+**关键指标**：
+| 指标 | 数值 |
+|------|------|
+| 平均相关性 | 86.7% |
+| 测试类别数 | 77 |
+| 最高相关性 (bed) | 98.5% |
+
+**结论**：模型的注意力分布与 COCO 数据集的真实位置分布高度相关，证明 Transformer 学习到了空间先验
+
+### 3\. 姿态模型分析 (YOLOv8 Pose)
+
+**实验目的**：分析姿态检测模型在大规模数据上的表现规律
+
+**数据规模**：
+- 图像数量：117,266 张
+- 人体实例：约 26 万个
+- 关键点：17 个 COCO 标准关键点
+
+**关键发现**：
+| 身体部位 | 置信度特征 | 原因分析 |
+|----------|------------|----------|
+| 头部/面部 | 最高 (>90%) | 通常可见，特征明显 |
+| 上肢 | 较高 (70-90%) | 动作多样但通常可见 |
+| 下肢 | 最低 (<60%) | 遮挡较多（桌子、其他人等） |
+
+-----
+
 ## 🛠️ 技术栈
 
 ### 前端
@@ -272,11 +370,19 @@ Data-Visualization-Coursework/
 ├── 📄 README.md                 # 项目说明（本文件）
 ├── 📄 PROJECT_STATUS.md         # 开发进度跟踪
 │
-├── 🐍 find_image.py             # 生成门户主图及其数据
-├── 🐍 save_overview.py          # 生成门户概览图
-├── 🐍 process_semantic.py       # 语义数据处理脚本
-├── 🐍 process_spatial.py        # 空间数据处理脚本
-├── 🐍 process_pose.py           # 姿态数据处理脚本
+├── � scripts/                  # 数据处理脚本
+│   ├── 📁 preprocessing/        # 预处理脚本
+│   │   ├── generate_story_img/  # 门户图片生成
+│   │   └── process_coco_annotation/  # COCO 标注处理
+│   ├── 📁 training/             # 模型训练相关
+│   │   ├── class_bias_train/    # ResNet-18 类别偏差实验
+│   │   └── grounding_train/     # Grounding Transformer 空间先验实验
+│   └── 📁 yolo_analysis/        # YOLOv8 姿态分析
+│
+├── 📁 checkpoints/              # 模型权重文件
+│   ├── coco_multilabel_resnet18.pth  # ResNet-18 多标签分类
+│   ├── chair_transformer.pth         # Grounding Transformer
+│   └── yolov8n-pose.pt               # YOLOv8 姿态模型
 │
 ├── 📁 src/
 │   ├── 📄 index.html            # 主页面
@@ -286,26 +392,39 @@ Data-Visualization-Coursework/
 │   │   ├── spatial_view.js      # 空间视图模块
 │   │   ├── semantic_graph.js    # 语义视图模块
 │   │   ├── pose_view.js         # 姿态视图模块
+│   │   ├── bias_view.js         # 模型偏差实验视图
+│   │   ├── spatial_prior_view.js     # 空间先验实验视图
+│   │   ├── pose_model_analysis.js    # 姿态模型分析视图
+│   │   ├── image_explorer.js    # YOLOv8 推理示例浏览器
 │   │   └── distribution_matrix.js
 │   │
 │   ├── 📁 data/
-│   │   ├── instances_train2017.json      # COCO 实例标注 (部分或引用)
+│   │   ├── instances_train2017.json      # COCO 实例标注
 │   │   ├── person_keypoints_train2017.json
 │   │   ├── hero_data.json                # 门户叙事数据
 │   │   ├── semantic_data.json            # 预处理：语义
 │   │   ├── spatial_data.json             # 预处理：空间
-│   │   └── pose_stats.json               # 预处理：姿态
+│   │   ├── pose_stats.json               # 预处理：姿态
+│   │   ├── spatial_prior_data.json       # 空间先验实验数据
+│   │   ├── pose_analysis_results.json    # 姿态模型分析数据
+│   │   ├── coco_pose_results.json        # YOLOv8 推理结果
+│   │   └── coco_vs_yolo_scatter.json     # COCO vs YOLO 对比数据
 │   │
+│   ├── 📁 visualized/           # YOLOv8 推理可视化图片
+│   ├── 📁 network_img/          # 网络架构图
 │   ├── 📁 bg/                   # 门户背景图
-│   │   ├── bg_intro_lens.png
-│   │   ├── bg_spatial_outdoor.png
-│   │   ├── bg_semantic_social.png
-│   │   └── bg_pose_biometric.png
-│   │
 │   └── 📁 icon/                 # 静态图标资源
 │
-├── 📄 main.typ                  # Typst 演示文稿
-└── 📄 main.sty                  # LaTeX 样式（可选）
+├── 📁 assets/                   # README 展示图片
+│   ├── banner.png
+│   ├── spatial_view.png
+│   ├── semantic_view.png
+│   ├── pose_view.png
+│   ├── 类别先验偏差分析.png
+│   ├── 空间先验实验.png
+│   └── 综合姿态及模型分析.png
+│
+└── 📄 presentation.typ          # Typst 演示文稿
 ```
 
 -----
