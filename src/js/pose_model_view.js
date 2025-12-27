@@ -1,6 +1,5 @@
 import * as d3 from "d3";
 import poseStats from "../data/pose_stats.json";
-import poseModelAttention from "../data/pose_model_attention.json";
 import { initImageExplorer } from "./image_explorer.js";
 import { initPoseModelAnalysis } from "./pose_model_analysis.js";
 
