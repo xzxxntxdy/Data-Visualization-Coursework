@@ -52,8 +52,7 @@ export function renderKeypointAccuracyChart(container) {
   
   // 按从头到脚的解剖学顺序排序（而不是置信度排序）
   const anatomicalOrder = [
-    'nose',
-    'left_eye', 'right_eye',
+    'left_eye', 'right_eye', 'nose',
     'left_ear', 'right_ear',
     'left_shoulder', 'right_shoulder',
     'left_elbow', 'right_elbow',
@@ -73,7 +72,9 @@ export function renderKeypointAccuracyChart(container) {
   data = data.sort((a, b) => {
     const keyA = a.keypoint || a.name;
     const keyB = b.keypoint || b.name;
-    return (keypointToOrder[keyA] || 999) - (keypointToOrder[keyB] || 999);
+    const orderA = keypointToOrder[keyA] !== undefined ? keypointToOrder[keyA] : 999;
+    const orderB = keypointToOrder[keyB] !== undefined ? keypointToOrder[keyB] : 999;
+    return orderA - orderB;
   });
   
   const margin = { top: 30, right: 30, bottom: 80, left: 60 };
@@ -87,6 +88,8 @@ export function renderKeypointAccuracyChart(container) {
     .append("svg")
     .attr("width", width + margin.left + margin.right)
     .attr("height", height + margin.top + margin.bottom)
+    .style("display", "block")
+    .style("margin", "0 auto")
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
@@ -253,7 +256,7 @@ export function renderKeypointAccuracyChart(container) {
     .style("font-size", "16px")
     .style("font-weight", "700")
     .style("color", "#1e293b")
-    .html("📊 17个关键点的平均置信度曲线（11万张新图片）");
+    .html("📊 17个关键点的平均置信度曲线（11万张）");
 
   // 说明 - 改进的展示
   d3.select(container).append("div")
@@ -312,6 +315,8 @@ export function renderBodyRegionComparison(container) {
     .append("svg")
     .attr("width", width + margin.left + margin.right)
     .attr("height", height + margin.top + margin.bottom)
+    .style("display", "block")
+    .style("margin", "0 auto")
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
@@ -603,12 +608,10 @@ export function renderBodyRegionComparison(container) {
     .style("color", "#64748b")
     .style("line-height", "1.6")
     .html(
-      "💡 <strong>解读</strong>：" +
-      "X轴表示COCO 2017训练+验证数据集中各关键点的标注可见度（真实标注数据），" +
-      "Y轴表示YOLO模型对这些关键点的识别置信度。" +
-      "右上角区域（高COCO可见度+高模型置信度）代表在COCO中标注充分的关键点，模型学得很好；" +
-      "左下角（低COCO可见度+低模型置信度）代表在COCO中标注不足的关键点，模型学得困难。" +
-      "这说明 <strong>数据集的标注质量和充分度直接决定模型的学习效果</strong>。" +
+      "💡 <strong>结论</strong>：" +
+      "关键点的可见度直接影响模型的识别能力。遮挡越多、物体越小，识别就越难——这很正常。" +
+      "从散点图可以看出，YOLO已经完全'学会'了COCO训练集的特征分布，" +
+      "置信度高低主要取决于训练数据中该关键点的标注质量和充分度，而不是新数据的实际难度。" +
       "<strong>鼠标悬停气泡查看详细数据</strong>。"
     );
 }
@@ -635,45 +638,7 @@ export function initPoseModelAnalysis(containerId) {
       background: #f8fafc;
       border-radius: 8px;
     ">
-      <button id="btn-chart1" class="nav-btn active" data-chart="chart1" style="
-        padding: 8px 16px;
-        background: #667eea;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 200ms ease;
-      ">
-        📈 关键点排序
-      </button>
-      <button id="btn-chart2" class="nav-btn" data-chart="chart2" style="
-        padding: 8px 16px;
-        background: #e2e8f0;
-        color: #475569;
-        border: none;
-        border-radius: 6px;
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 200ms ease;
-      ">
-        🔗 遮挡 vs 性能
-      </button>
       <div style="flex: 1;"></div>
-      <button id="btn-fullscreen" style="
-        padding: 8px 12px;
-        background: #f1f5f9;
-        color: #64748b;
-        border: 1px solid #cbd5e1;
-        border-radius: 6px;
-        font-size: 13px;
-        cursor: pointer;
-        transition: all 200ms ease;
-      ">
-        ⛶ 全屏
-      </button>
     </div>
 
     <!-- 图表容器 -->
@@ -686,6 +651,7 @@ export function initPoseModelAnalysis(containerId) {
         padding: 24px;
         box-shadow: 0 2px 12px rgba(0,0,0,0.05);
         transition: all 300ms ease;
+        position: relative;
       "></div>
 
       <!-- 图表2 -->
@@ -696,58 +662,8 @@ export function initPoseModelAnalysis(containerId) {
         padding: 24px;
         box-shadow: 0 2px 12px rgba(0,0,0,0.05);
         transition: all 300ms ease;
+        position: relative;
       "></div>
-
-      <!-- 图例说明 -->
-      <div style="
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 24px;
-      ">
-        <div style="
-          font-size: 14px;
-          font-weight: 700;
-          margin-bottom: 16px;
-          color: #1e293b;
-        ">
-          📖 使用指南
-        </div>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-          <div>
-            <div style="font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 8px;">
-              🎯 关键点识别能力曲线
-            </div>
-            <div style="font-size: 12px; color: #64748b; line-height: 1.5;">
-              <div style="margin-bottom: 6px;">
-                <span style="display: inline-block; width: 12px; height: 12px; background: #667eea; border-radius: 50%; vertical-align: middle; margin-right: 6px;"></span>
-                蓝色 = 高准确度 (&gt;70%)
-              </div>
-              <div style="margin-bottom: 6px;">
-                <span style="display: inline-block; width: 12px; height: 12px; background: #ed8936; border-radius: 50%; vertical-align: middle; margin-right: 6px;"></span>
-                橙色 = 中等 (60-70%)
-              </div>
-              <div>
-                <span style="display: inline-block; width: 12px; height: 12px; background: #f56565; border-radius: 50%; vertical-align: middle; margin-right: 6px;"></span>
-                红色 = 低准确度 (&lt;60%)
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <div style="font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 8px;">
-              💡 关键发现
-            </div>
-            <div style="font-size: 12px; color: #64748b; line-height: 1.5;">
-              <div style="margin-bottom: 6px;">✓ 躯干最强 (0.759)</div>
-              <div style="margin-bottom: 6px;">✓ 下肢最弱 (0.553)</div>
-              <div style="margin-bottom: 6px;">✓ 完美对称性差异</div>
-              <div>✓ 遮挡决定性能</div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   `;
 
@@ -755,43 +671,30 @@ export function initPoseModelAnalysis(containerId) {
   renderKeypointAccuracyChart("#chart1");
   renderBodyRegionComparison("#chart2");
 
-  // 导航按钮交互
-  const navButtons = document.querySelectorAll(".nav-btn");
-  navButtons.forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      navButtons.forEach(b => {
-        b.style.background = "#e2e8f0";
-        b.style.color = "#475569";
-      });
-      btn.style.background = "#667eea";
-      btn.style.color = "white";
-      
-      const targetChart = btn.dataset.chart;
-      const chart1 = document.getElementById("chart1");
-      const chart2 = document.getElementById("chart2");
-      
-      if (targetChart === "chart1") {
-        chart1.style.display = "block";
-        chart2.style.display = "none";
-      } else {
-        chart1.style.display = "none";
-        chart2.style.display = "block";
-      }
-    });
-  });
+  // 为图表1添加图例
+  const legend1HTML = `
+    <div style="position: absolute; top: 50px; right: 40px; background: rgba(255,255,255,0.95); padding: 24px 32px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 22px; color: #64748b; line-height: 2.0;">
+      <div style="font-weight: 600; margin-bottom: 12px;">📊 置信度分布</div>
+      <div style="margin-bottom: 8px;"><span style="display: inline-block; width: 16px; height: 16px; background: #667eea; border-radius: 50%; vertical-align: middle; margin-right: 10px;"></span>蓝色 >70%</div>
+      <div style="margin-bottom: 8px;"><span style="display: inline-block; width: 16px; height: 16px; background: #ed8936; border-radius: 50%; vertical-align: middle; margin-right: 10px;"></span>橙色 60-70%</div>
+      <div><span style="display: inline-block; width: 16px; height: 16px; background: #f56565; border-radius: 50%; vertical-align: middle; margin-right: 10px;"></span>红色 <60%</div>
+    </div>
+  `;
+  d3.select("#chart1").insert("div", ":first-child").html(legend1HTML);
 
-  // 全屏按钮
-  const fullscreenBtn = document.getElementById("btn-fullscreen");
-  if (fullscreenBtn) {
-    fullscreenBtn.addEventListener("click", () => {
-      const elem = container;
-      if (elem.requestFullscreen) {
-        elem.requestFullscreen();
-      } else if (elem.webkitRequestFullscreen) {
-        elem.webkitRequestFullscreen();
-      }
-    });
-  }
+  // 为图表2添加图例
+  const legend2HTML = `
+    <div style="position: absolute; top: 50px; right: 40px; background: rgba(255,255,255,0.95); padding: 24px 32px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 22px; color: #64748b; line-height: 2.0;">
+      <div style="font-weight: 600; margin-bottom: 12px;">🔗 身体部位</div>
+      <div style="margin-bottom: 8px;"><span style="display: inline-block; width: 16px; height: 16px; background: #667eea; border-radius: 50%; vertical-align: middle; margin-right: 10px;"></span>蓝色 头部</div>
+      <div style="margin-bottom: 8px;"><span style="display: inline-block; width: 16px; height: 16px; background: #ed8936; border-radius: 50%; vertical-align: middle; margin-right: 10px;"></span>橙色 上肢</div>
+      <div style="margin-bottom: 8px;"><span style="display: inline-block; width: 16px; height: 16px; background: #48bb78; border-radius: 50%; vertical-align: middle; margin-right: 10px;"></span>绿色 躯干</div>
+      <div><span style="display: inline-block; width: 16px; height: 16px; background: #f56565; border-radius: 50%; vertical-align: middle; margin-right: 10px;"></span>红色 下肢</div>
+    </div>
+  `;
+  d3.select("#chart2").insert("div", ":first-child").html(legend2HTML);
+
+  // 全屏按钮已移除
 
   // 添加鼠标悬停效果到卡片
   const cards = document.querySelectorAll("#chart1, #chart2");

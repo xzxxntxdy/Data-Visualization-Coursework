@@ -2,7 +2,8 @@
 // 姿态视图 (优化版)
 
 import * as d3 from "d3";
-import poseData from "../data/pose_stats.json"; 
+import poseData from "../data/pose_stats.json";
+import cocoYoloData from "../data/coco_vs_yolo_scatter.json"; 
 
 // ═══════════════════════════════════════════════════════════════════
 // 🔧 Event Bus & Global State
@@ -354,6 +355,12 @@ function processData() {
         "#ffffcc", "#ffcc99"
     ];
 
+    // 创建COCO可见度的映射表（keypoint名称 -> coco_visibility_score）
+    const cocoVisibilityMap = {};
+    cocoYoloData.data.forEach(item => {
+        cocoVisibilityMap[item.keypoint] = item.coco_visibility_score / 100; // 转换为0-1的比例
+    });
+
     const keypoints = raw.keypoints.map((name, i) => {
         const partCN = getBodyPartCN(name);
         const baseColor = distinctColors[i] || "#ccc";
@@ -370,7 +377,7 @@ function processData() {
             colorVivid: vividColor, // 全局使用这个高亮鲜艳色
             x: raw.mean_pose[i][0], 
             y: 1 - raw.mean_pose[i][1],
-            x_std: raw.std_dev_pose[i][0], y_std: raw.std_dev_pose[i][1], vis: raw.visibility_prob[i]
+            x_std: raw.std_dev_pose[i][0], y_std: raw.std_dev_pose[i][1], vis: cocoVisibilityMap[name] || 0.5
         };
     });
 

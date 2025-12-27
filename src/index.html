@@ -1413,14 +1413,14 @@
                         &nbsp;&nbsp;&nbsp;&nbsp;• 曲线呈现下降趋势，说明下肢识别比上肢困难<br>
                         &nbsp;&nbsp;&nbsp;&nbsp;• 蓝色点=高准确(>70%)、橙色点=中等(60-70%)、红色点=低准确(<60%)<br>
                         &nbsp;&nbsp;<br>
-                        &nbsp;&nbsp;<strong>📊 图表2：遮挡率 ↔ 识别准确度的关系</strong><br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;• X轴：COCO数据集中各部位的遮挡率<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;• Y轴：模型的识别准确度<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;• 虚线：理想的反比例关系（遮挡↑准确↓）<br>
+                        &nbsp;&nbsp;<strong>📊 图表2：COCO可见度 ↔ YOLO置信度的关系</strong><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;• X轴：真实COCO标注中各关键点的可见度<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;• Y轴：模型预测的置信度<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;• 散点：每个关键点的实际数据分布<br>
                         &nbsp;&nbsp;&nbsp;&nbsp;• 解读：<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;X轴（遮挡率）越低，Y轴（识别准确度）越高。<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;左上角区域（低遮挡+高准确度）代表模型学得很好的部位；右下角代表学得困难的部位。<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;这说明模型的识别能力与遮挡率高度相关，符合预期。
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;关键点的可见度直接影响模型识别能力。遮挡越多、物体越小，识别就越难——这很正常。<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;从散点图可以看出，YOLO已经完全"学会"了COCO的特征分布，<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;置信度高低主要取决于训练数据中的标注质量，而不是新数据的实际难度。
                     </p>
 
                 </div>
