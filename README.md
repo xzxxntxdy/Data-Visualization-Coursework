@@ -1,7 +1,7 @@
 # 🌌 COCO-Verse：多视图可视化分析系统
 
 <p align="center">
-  <img src="/images/banner.png" alt="COCO-Verse Banner" width="100%">
+  <img src="assets/banner.png" alt="COCO-Verse Banner" width="100%">
 </p>
 
 > **COCO-Verse** 是一个基于 COCO 2017 数据集的交互式多视图可视化分析系统，通过空间分布、语义共现、人体姿态三个维度，揭示视觉数据中的深层模式与洞察。
@@ -50,7 +50,7 @@ COCO (Common Objects in Context) 是计算机视觉领域最具影响力的大�
 ### 🏠 沉浸式门户 (Portal)
 
 <p align="center">
-  <img src="/images/portal_demo.png" alt="Portal Demo" width="80%">
+  <img src="assets/portal_demo.png" alt="Portal Demo" width="80%">
 </p>
 
 - **滚动叙事**：从单张样本图片出发，逐步展示空间定位、语义编织、姿态透视三个分析阶段
@@ -60,7 +60,7 @@ COCO (Common Objects in Context) 是计算机视觉领域最具影响力的大�
 ### 📍 空间与尺度视图 (Spatial View)
 
 <p align="center">
-  <img src="/images/spatial_view.png" alt="Spatial View" width="80%">
+  <img src="assets/spatial_view.png" alt="Spatial View" width="80%">
 </p>
 
 - **等高线密度热力图**：可视化物体中心点的空间分布
@@ -72,7 +72,7 @@ COCO (Common Objects in Context) 是计算机视觉领域最具影响力的大�
 ### 🕸️ 语义共现网络 (Semantic View)
 
 <p align="center">
-  <img src="/images/semantic_view.png" alt="Semantic View" width="80%">
+  <img src="assets/semantic_view.png" alt="Semantic View" width="80%">
 </p>
 
 - **力导向图**：节点大小映射类别频次，边粗细映射共现强度
@@ -83,7 +83,7 @@ COCO (Common Objects in Context) 是计算机视觉领域最具影响力的大�
 ### 🦴 人体姿态视图 (Pose View)
 
 <p align="center">
-  <img src="/images/pose_view.png" alt="Pose View" width="80%">
+  <img src="assets/pose_view.png" alt="Pose View" width="80%">
 </p>
 
 - **概率骨架图**：17 个关键点的可见性热力光晕
