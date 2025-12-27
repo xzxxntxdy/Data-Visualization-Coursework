@@ -1,0 +1,519 @@
+{
+  "metadata": {
+    "version": "2.1",
+    "description": "清洗后的姿态+模型分析（仅保留所有节点置信度>=0.5的数据）",
+    "data_source": "extract_attention_project/output/pose_inference_all/keypoint_confidence_stats.json",
+    "filter_criteria": "all_keypoints_confidence >= 0.5",
+    "original_images": 118287,
+    "original_people": 157773,
+    "cleaned_people": 178,
+    "retention_rate": 0.0011296744917794735,
+    "total_keypoints": 3026,
+    "update_date": "2025-12-27"
+  },
+  "keypoint_stats": {
+    "nose": {
+      "mean": 0.671690876640724,
+      "std": 0.32738579541705093,
+      "median": 0.927187129855156,
+      "min": 0.5,
+      "max": 0.9997534155845642,
+      "detection_rate": 100.0,
+      "detected_count": 169,
+      "total_count": 178
+    },
+    "left_eye": {
+      "mean": 0.5859687250330282,
+      "std": 0.3438692670038547,
+      "median": 0.8086819142103195,
+      "min": 0.5,
+      "max": 0.9996641874313354,
+      "detection_rate": 100.0,
+      "detected_count": 169,
+      "total_count": 178
+    },
+    "right_eye": {
+      "mean": 0.586594909666816,
+      "std": 0.342534613233404,
+      "median": 0.8012831300497055,
+      "min": 0.5,
+      "max": 0.9996812343597412,
+      "detection_rate": 100.0,
+      "detected_count": 169,
+      "total_count": 178
+    },
+    "left_ear": {
+      "mean": 0.5169591106060454,
+      "std": 0.2956899755406086,
+      "median": 0.60303113758564,
+      "min": 0.5,
+      "max": 0.9992196559906006,
+      "detection_rate": 100.0,
+      "detected_count": 169,
+      "total_count": 178
+    },
+    "right_ear": {
+      "mean": 0.5192071013765155,
+      "std": 0.29452098263959653,
+      "median": 0.5966390311717987,
+      "min": 0.5,
+      "max": 0.999841570854187,
+      "detection_rate": 100.0,
+      "detected_count": 169,
+      "total_count": 178
+    },
+    "left_shoulder": {
+      "mean": 0.8498132644459502,
+      "std": 0.2353910742436268,
+      "median": 1.0130794912576675,
+      "min": 0.5,
+      "max": 0.9999374151229858,
+      "detection_rate": 100.0,
+      "detected_count": 169,
+      "total_count": 178
+    },
+    "right_shoulder": {
+      "mean": 0.851013415237046,
+      "std": 0.23404352954188978,
+      "median": 1.0140804737806322,
+      "min": 0.5,
+      "max": 0.9999569654464722,
+      "detection_rate": 100.0,
+      "detected_count": 169,
+      "total_count": 178
+    },
+    "left_elbow": {
+      "mean": 0.7052289898554268,
+      "std": 0.2711559319195462,
+      "median": 0.8758933156728745,
+      "min": 0.5,
+      "max": 0.9995012283325195,
+      "detection_rate": 100.0,
+      "detected_count": 169,
+      "total_count": 178
+    },
+    "right_elbow": {
+      "mean": 0.7089946559530176,
+      "std": 0.26919133107233456,
+      "median": 0.8825572907924653,
+      "min": 0.5,
+      "max": 0.999530553817749,
+      "detection_rate": 100.0,
+      "detected_count": 169,
+      "total_count": 178
+    },
+    "left_wrist": {
+      "mean": 0.6550172973521946,
+      "std": 0.26529614875019386,
+      "median": 0.7905197203159333,
+      "min": 0.5,
+      "max": 0.998134434223175,
+      "detection_rate": 100.0,
+      "detected_count": 169,
+      "total_count": 178
+    },
+    "right_wrist": {
+      "mean": 0.6588517202278729,
+      "std": 0.2628451881820507,
+      "median": 0.7952932566404343,
+      "min": 0.5,
+      "max": 0.998894989490509,
+      "detection_rate": 100.0,
+      "detected_count": 169,
+      "total_count": 178
+    },
+    "left_hip": {
+      "mean": 0.7583142572788392,
+      "std": 0.29319802931335,
+      "median": 0.990548810362816,
+      "min": 0.5,
+      "max": 0.999948263168335,
+      "detection_rate": 100.0,
+      "detected_count": 169,
+      "total_count": 178
+    },
+    "right_hip": {
+      "mean": 0.7594135399855958,
+      "std": 0.292570996320134,
+      "median": 0.9909772038459779,
+      "min": 0.5,
+      "max": 0.9999665021896362,
+      "detection_rate": 100.0,
+      "detected_count": 169,
+      "total_count": 178
+    },
+    "left_knee": {
+      "mean": 0.6011700489222359,
+      "std": 0.360581537717361,
+      "median": 0.8539866060018539,
+      "min": 0.5,
+      "max": 0.9999079704284668,
+      "detection_rate": 100.0,
+      "detected_count": 169,
+      "total_count": 178
+    },
+    "right_knee": {
+      "mean": 0.6013117407453289,
+      "std": 0.36027877974922223,
+      "median": 0.8537017822265626,
+      "min": 0.5,
+      "max": 0.9999239444732666,
+      "detection_rate": 100.0,
+      "detected_count": 169,
+      "total_count": 178
+    },
+    "left_ankle": {
+      "mean": 0.504101668789112,
+      "std": 0.3717440316062247,
+      "median": 0.608838951587677,
+      "min": 0.5,
+      "max": 0.9998775720596313,
+      "detection_rate": 100.0,
+      "detected_count": 169,
+      "total_count": 178
+    },
+    "right_ankle": {
+      "mean": 0.5045033561118814,
+      "std": 0.37190258423494194,
+      "median": 0.6104342401027679,
+      "min": 0.5,
+      "max": 0.9999494552612305,
+      "detection_rate": 100.0,
+      "detected_count": 169,
+      "total_count": 178
+    }
+  },
+  "body_region_stats": {
+    "头部": {
+      "mean": 0.5760841446646258,
+      "std": 0.32080012676690295,
+      "median": 0.5859687250330282,
+      "min": 0.5169591106060454,
+      "max": 0.671690876640724,
+      "detection_rate": 100.0
+    },
+    "上肢": {
+      "mean": 0.7381532238452514,
+      "std": 0.25632053395160703,
+      "median": 0.7071118229042221,
+      "min": 0.6550172973521946,
+      "max": 0.851013415237046,
+      "detection_rate": 100.0
+    },
+    "躯干": {
+      "mean": 0.7588638986322175,
+      "std": 0.292884512816742,
+      "median": 0.7588638986322175,
+      "min": 0.7583142572788392,
+      "max": 0.7594135399855958,
+      "detection_rate": 100.0
+    },
+    "下肢": {
+      "mean": 0.5527717036421396,
+      "std": 0.3661267333269375,
+      "median": 0.5528367025170586,
+      "min": 0.504101668789112,
+      "max": 0.6013117407453289,
+      "detection_rate": 100.0
+    }
+  },
+  "symmetry_analysis": [
+    {
+      "left": "left_eye",
+      "right": "right_eye",
+      "left_confidence": 0.5859687250330282,
+      "right_confidence": 0.586594909666816,
+      "diff": 0.0006261846337878296,
+      "diff_ratio": 0.10680608118093682
+    },
+    {
+      "left": "left_ear",
+      "right": "right_ear",
+      "left_confidence": 0.5169591106060454,
+      "right_confidence": 0.5192071013765155,
+      "diff": 0.0022479907704701096,
+      "diff_ratio": 0.43390543804142956
+    },
+    {
+      "left": "left_shoulder",
+      "right": "right_shoulder",
+      "left_confidence": 0.8498132644459502,
+      "right_confidence": 0.851013415237046,
+      "diff": 0.001200150791095811,
+      "diff_ratio": 0.14112558386248944
+    },
+    {
+      "left": "left_elbow",
+      "right": "right_elbow",
+      "left_confidence": 0.7052289898554268,
+      "right_confidence": 0.7089946559530176,
+      "diff": 0.0037656660975907696,
+      "diff_ratio": 0.5325418096001524
+    },
+    {
+      "left": "left_wrist",
+      "right": "right_wrist",
+      "left_confidence": 0.6550172973521946,
+      "right_confidence": 0.6588517202278729,
+      "diff": 0.003834422875678256,
+      "diff_ratio": 0.5836841914029813
+    },
+    {
+      "left": "left_hip",
+      "right": "right_hip",
+      "left_confidence": 0.7583142572788392,
+      "right_confidence": 0.7594135399855958,
+      "diff": 0.0010992827067566324,
+      "diff_ratio": 0.14485900683086764
+    },
+    {
+      "left": "left_knee",
+      "right": "right_knee",
+      "left_confidence": 0.6011700489222359,
+      "right_confidence": 0.6013117407453289,
+      "diff": 0.000141691823092982,
+      "diff_ratio": 0.02356656446866506
+    },
+    {
+      "left": "left_ankle",
+      "right": "right_ankle",
+      "left_confidence": 0.504101668789112,
+      "right_confidence": 0.5045033561118814,
+      "diff": 0.0004016873227693507,
+      "diff_ratio": 0.07965205662321206
+    }
+  ],
+  "global_confidence": {
+    "mean": 0.6493032163663311,
+    "median": 0.6550172973521946,
+    "std": 0.10880873388214084,
+    "min": 0.5,
+    "max": 0.9999665021896362,
+    "high_confidence_ratio": 100.0
+  },
+  "chart_data": {
+    "chart1": {
+      "title": "17个关键点识别能力曲线",
+      "description": "清洗后的关键点置信度统计",
+      "data": [
+        {
+          "rank": 1,
+          "keypoint": "nose",
+          "mean": 0.671690876640724,
+          "std": 0.32738579541705093,
+          "median": 0.927187129855156,
+          "detection_rate": 100.0,
+          "body_region": "头部"
+        },
+        {
+          "rank": 2,
+          "keypoint": "left_eye",
+          "mean": 0.5859687250330282,
+          "std": 0.3438692670038547,
+          "median": 0.8086819142103195,
+          "detection_rate": 100.0,
+          "body_region": "头部"
+        },
+        {
+          "rank": 3,
+          "keypoint": "right_eye",
+          "mean": 0.586594909666816,
+          "std": 0.342534613233404,
+          "median": 0.8012831300497055,
+          "detection_rate": 100.0,
+          "body_region": "头部"
+        },
+        {
+          "rank": 4,
+          "keypoint": "left_ear",
+          "mean": 0.5169591106060454,
+          "std": 0.2956899755406086,
+          "median": 0.60303113758564,
+          "detection_rate": 100.0,
+          "body_region": "头部"
+        },
+        {
+          "rank": 5,
+          "keypoint": "right_ear",
+          "mean": 0.5192071013765155,
+          "std": 0.29452098263959653,
+          "median": 0.5966390311717987,
+          "detection_rate": 100.0,
+          "body_region": "头部"
+        },
+        {
+          "rank": 6,
+          "keypoint": "left_shoulder",
+          "mean": 0.8498132644459502,
+          "std": 0.2353910742436268,
+          "median": 1.0130794912576675,
+          "detection_rate": 100.0,
+          "body_region": "上肢"
+        },
+        {
+          "rank": 7,
+          "keypoint": "right_shoulder",
+          "mean": 0.851013415237046,
+          "std": 0.23404352954188978,
+          "median": 1.0140804737806322,
+          "detection_rate": 100.0,
+          "body_region": "上肢"
+        },
+        {
+          "rank": 8,
+          "keypoint": "left_elbow",
+          "mean": 0.7052289898554268,
+          "std": 0.2711559319195462,
+          "median": 0.8758933156728745,
+          "detection_rate": 100.0,
+          "body_region": "上肢"
+        },
+        {
+          "rank": 9,
+          "keypoint": "right_elbow",
+          "mean": 0.7089946559530176,
+          "std": 0.26919133107233456,
+          "median": 0.8825572907924653,
+          "detection_rate": 100.0,
+          "body_region": "上肢"
+        },
+        {
+          "rank": 10,
+          "keypoint": "left_wrist",
+          "mean": 0.6550172973521946,
+          "std": 0.26529614875019386,
+          "median": 0.7905197203159333,
+          "detection_rate": 100.0,
+          "body_region": "上肢"
+        },
+        {
+          "rank": 11,
+          "keypoint": "right_wrist",
+          "mean": 0.6588517202278729,
+          "std": 0.2628451881820507,
+          "median": 0.7952932566404343,
+          "detection_rate": 100.0,
+          "body_region": "上肢"
+        },
+        {
+          "rank": 12,
+          "keypoint": "left_hip",
+          "mean": 0.7583142572788392,
+          "std": 0.29319802931335,
+          "median": 0.990548810362816,
+          "detection_rate": 100.0,
+          "body_region": "躯干"
+        },
+        {
+          "rank": 13,
+          "keypoint": "right_hip",
+          "mean": 0.7594135399855958,
+          "std": 0.292570996320134,
+          "median": 0.9909772038459779,
+          "detection_rate": 100.0,
+          "body_region": "躯干"
+        },
+        {
+          "rank": 14,
+          "keypoint": "left_knee",
+          "mean": 0.6011700489222359,
+          "std": 0.360581537717361,
+          "median": 0.8539866060018539,
+          "detection_rate": 100.0,
+          "body_region": "下肢"
+        },
+        {
+          "rank": 15,
+          "keypoint": "right_knee",
+          "mean": 0.6013117407453289,
+          "std": 0.36027877974922223,
+          "median": 0.8537017822265626,
+          "detection_rate": 100.0,
+          "body_region": "下肢"
+        },
+        {
+          "rank": 16,
+          "keypoint": "left_ankle",
+          "mean": 0.504101668789112,
+          "std": 0.3717440316062247,
+          "median": 0.608838951587677,
+          "detection_rate": 100.0,
+          "body_region": "下肢"
+        },
+        {
+          "rank": 17,
+          "keypoint": "right_ankle",
+          "mean": 0.5045033561118814,
+          "std": 0.37190258423494194,
+          "median": 0.6104342401027679,
+          "detection_rate": 100.0,
+          "body_region": "下肢"
+        }
+      ]
+    },
+    "chart2": {
+      "title": "身体部位识别难度对比",
+      "description": "清洗后的身体部位统计",
+      "regions": [
+        {
+          "name": "头部",
+          "mean": 0.5760841446646258,
+          "std": 0.32080012676690295,
+          "detection_rate": 100.0,
+          "keypoint_count": 5
+        },
+        {
+          "name": "上肢",
+          "mean": 0.7381532238452514,
+          "std": 0.25632053395160703,
+          "detection_rate": 100.0,
+          "keypoint_count": 6
+        },
+        {
+          "name": "躯干",
+          "mean": 0.7588638986322175,
+          "std": 0.292884512816742,
+          "detection_rate": 100.0,
+          "keypoint_count": 2
+        },
+        {
+          "name": "下肢",
+          "mean": 0.5527717036421396,
+          "std": 0.3661267333269375,
+          "detection_rate": 100.0,
+          "keypoint_count": 4
+        }
+      ]
+    },
+    "chart3": {
+      "title": "COCO遮挡特征 ↔ 模型识别性能",
+      "description": "遮挡率与识别准确度的关系",
+      "scatter": [
+        {
+          "region": "头部",
+          "accuracy": 0.5760841446646258,
+          "occlusion_rate": 0.7119579276676871,
+          "detection_rate": 100.0
+        },
+        {
+          "region": "上肢",
+          "accuracy": 0.7381532238452514,
+          "occlusion_rate": 0.6309233880773744,
+          "detection_rate": 100.0
+        },
+        {
+          "region": "躯干",
+          "accuracy": 0.7588638986322175,
+          "occlusion_rate": 0.6205680506838913,
+          "detection_rate": 100.0
+        },
+        {
+          "region": "下肢",
+          "accuracy": 0.5527717036421396,
+          "occlusion_rate": 0.7236141481789302,
+          "detection_rate": 100.0
+        }
+      ]
+    }
+  }
+}

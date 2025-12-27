@@ -1,0 +1,200 @@
+{
+  "metadata": {
+    "source": "COCO 2017 (train+val) vs YOLO inference on 117,877 new images",
+    "coco_total_people": 273469,
+    "yolo_new_images": 117877,
+    "yolo_total_people": 157773,
+    "x_axis": "COCO 2017数据集关键点真实可见度（273,469人物标注）",
+    "y_axis": "YOLO模型在117,877张新图片上的推测平均置信度",
+    "total_keypoints": 17
+  },
+  "data": [
+    {
+      "keypoint": "right_ankle",
+      "coco_visibility_score": 25.455353257590442,
+      "coco_visible_pct": 23.19677915961224,
+      "coco_occluded_pct": 4.517148195956397,
+      "coco_not_labeled_pct": 72.28607264443137,
+      "yolo_mean_confidence": 0.5448636246008319,
+      "yolo_std_confidence": 0.3925638389146609,
+      "yolo_detection_rate": 54.18022095035272,
+      "region": "下肢"
+    },
+    {
+      "keypoint": "left_ankle",
+      "coco_visibility_score": 25.465957750238598,
+      "coco_visible_pct": 23.251629983654453,
+      "coco_occluded_pct": 4.4286555331682935,
+      "coco_not_labeled_pct": 72.31971448317725,
+      "yolo_mean_confidence": 0.544429802292241,
+      "yolo_std_confidence": 0.3923964778065705,
+      "yolo_detection_rate": 54.16637827765207,
+      "region": "下肢"
+    },
+    {
+      "keypoint": "left_ear",
+      "coco_visibility_score": 28.350562586618594,
+      "coco_visible_pct": 27.460150876333334,
+      "coco_occluded_pct": 1.7808234205705216,
+      "coco_not_labeled_pct": 70.75902570309614,
+      "yolo_mean_confidence": 0.558315839454529,
+      "yolo_std_confidence": 0.3121171964039757,
+      "yolo_detection_rate": 57.21440297135759,
+      "region": "头部"
+    },
+    {
+      "keypoint": "right_ear",
+      "coco_visibility_score": 28.386581294406316,
+      "coco_visible_pct": 27.13872504744596,
+      "coco_occluded_pct": 2.4957124939207005,
+      "coco_not_labeled_pct": 70.36556245863333,
+      "yolo_mean_confidence": 0.5607436694866368,
+      "yolo_std_confidence": 0.3108832594529074,
+      "yolo_detection_rate": 56.88283800143244,
+      "region": "头部"
+    },
+    {
+      "keypoint": "left_knee",
+      "coco_visibility_score": 30.713170414196856,
+      "coco_visible_pct": 28.469771710870333,
+      "coco_occluded_pct": 4.486797406653039,
+      "coco_not_labeled_pct": 67.04343088247663,
+      "yolo_mean_confidence": 0.6492636528360148,
+      "yolo_std_confidence": 0.3806138453683255,
+      "yolo_detection_rate": 62.94988369366115,
+      "region": "下肢"
+    },
+    {
+      "keypoint": "right_knee",
+      "coco_visibility_score": 30.761621975434146,
+      "coco_visible_pct": 28.482204564319908,
+      "coco_occluded_pct": 4.558834822228479,
+      "coco_not_labeled_pct": 66.95896061345161,
+      "yolo_mean_confidence": 0.6494166800049552,
+      "yolo_std_confidence": 0.3802942675130679,
+      "yolo_detection_rate": 63.072490223295496,
+      "region": "下肢"
+    },
+    {
+      "keypoint": "left_eye",
+      "coco_visibility_score": 33.18273734865744,
+      "coco_visible_pct": 32.756912118009716,
+      "coco_occluded_pct": 0.8516504612954301,
+      "coco_not_labeled_pct": 66.39143742069486,
+      "yolo_mean_confidence": 0.6328462230356705,
+      "yolo_std_confidence": 0.3629731151707355,
+      "yolo_detection_rate": 63.601148485482305,
+      "region": "头部"
+    },
+    {
+      "keypoint": "right_eye",
+      "coco_visibility_score": 33.29719273482552,
+      "coco_visible_pct": 32.773001693062106,
+      "coco_occluded_pct": 1.048382083526835,
+      "coco_not_labeled_pct": 66.17861622341105,
+      "yolo_mean_confidence": 0.6335225024401614,
+      "yolo_std_confidence": 0.3615643139685931,
+      "yolo_detection_rate": 63.85229411876558,
+      "region": "头部"
+    },
+    {
+      "keypoint": "left_wrist",
+      "coco_visibility_score": 33.944980966764064,
+      "coco_visible_pct": 31.857724275877704,
+      "coco_occluded_pct": 4.174513381772706,
+      "coco_not_labeled_pct": 63.96776234234959,
+      "yolo_mean_confidence": 0.7074186811403702,
+      "yolo_std_confidence": 0.28003482368076016,
+      "yolo_detection_rate": 73.77880879491421,
+      "region": "上肢"
+    },
+    {
+      "keypoint": "right_wrist",
+      "coco_visibility_score": 34.77523960668302,
+      "coco_visible_pct": 32.65050151936782,
+      "coco_occluded_pct": 4.249476174630397,
+      "coco_not_labeled_pct": 63.100022306001776,
+      "yolo_mean_confidence": 0.7115598578461028,
+      "yolo_std_confidence": 0.27744769863660906,
+      "yolo_detection_rate": 74.46369150615125,
+      "region": "上肢"
+    },
+    {
+      "keypoint": "left_elbow",
+      "coco_visibility_score": 37.08738467614245,
+      "coco_visible_pct": 34.70996712607279,
+      "coco_occluded_pct": 4.754835100139321,
+      "coco_not_labeled_pct": 60.535197773787885,
+      "yolo_mean_confidence": 0.761647309043861,
+      "yolo_std_confidence": 0.286220150359521,
+      "yolo_detection_rate": 79.3527916690435,
+      "region": "上肢"
+    },
+    {
+      "keypoint": "nose",
+      "coco_visibility_score": 37.51595244799228,
+      "coco_visible_pct": 36.37926053775748,
+      "coco_occluded_pct": 2.273383820469596,
+      "coco_not_labeled_pct": 61.34735564177293,
+      "yolo_mean_confidence": 0.725426146771982,
+      "yolo_std_confidence": 0.34557389516244263,
+      "yolo_detection_rate": 71.75250518149494,
+      "region": "头部"
+    },
+    {
+      "keypoint": "right_elbow",
+      "coco_visibility_score": 37.530579334403534,
+      "coco_visible_pct": 34.981661541161884,
+      "coco_occluded_pct": 5.097835586483295,
+      "coco_not_labeled_pct": 59.92050287235482,
+      "yolo_mean_confidence": 0.7657142284292591,
+      "yolo_std_confidence": 0.2841464050207976,
+      "yolo_detection_rate": 79.68303828918764,
+      "region": "上肢"
+    },
+    {
+      "keypoint": "right_hip",
+      "coco_visibility_score": 39.16842494030402,
+      "coco_visible_pct": 34.87634795900084,
+      "coco_occluded_pct": 8.584153962606365,
+      "coco_not_labeled_pct": 56.5394980783928,
+      "yolo_mean_confidence": 0.8201666231844436,
+      "yolo_std_confidence": 0.3088249405601414,
+      "yolo_detection_rate": 81.92357374202177,
+      "region": "躯干"
+    },
+    {
+      "keypoint": "left_hip",
+      "coco_visibility_score": 39.16897344854444,
+      "coco_visible_pct": 34.99994514917596,
+      "coco_occluded_pct": 8.33805659873697,
+      "coco_not_labeled_pct": 56.66199825208707,
+      "yolo_mean_confidence": 0.8189793978611464,
+      "yolo_std_confidence": 0.3094868087196472,
+      "yolo_detection_rate": 81.88665994815337,
+      "region": "躯干"
+    },
+    {
+      "keypoint": "right_shoulder",
+      "coco_visibility_score": 47.55456742811799,
+      "coco_visible_pct": 45.13198936625358,
+      "coco_occluded_pct": 4.845156123728832,
+      "coco_not_labeled_pct": 50.02285451001759,
+      "yolo_mean_confidence": 0.9190944884560097,
+      "yolo_std_confidence": 0.24704594784977252,
+      "yolo_detection_rate": 92.5211284567068,
+      "region": "上肢"
+    },
+    {
+      "keypoint": "left_shoulder",
+      "coco_visibility_score": 47.68730642230015,
+      "coco_visible_pct": 45.49510182141303,
+      "coco_occluded_pct": 4.3844092017742415,
+      "coco_not_labeled_pct": 50.12048897681273,
+      "yolo_mean_confidence": 0.9177983256016262,
+      "yolo_std_confidence": 0.24846835614605048,
+      "yolo_detection_rate": 92.35963060853253,
+      "region": "上肢"
+    }
+  ]
+}
