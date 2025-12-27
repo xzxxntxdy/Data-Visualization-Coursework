@@ -467,9 +467,9 @@ function render() {
         <style>${getStylesHTML()}</style>
         <div class="sv2-root">
             <div class="sv2-card">
-                <div class="sv2-title">你的姿态</div>
+                <div class="sv2-title">姿态骨架</div>
                 <div class="sv2-subtitle">
-                    节点颜色：各个不同的鲜艳色彩区分不同身体部位 · 头部(红)、躯干(青)、四肢(黄绿橙蓝紫) · 概率椭圆表示位置不确定性
+                    节点颜色：各个不同的颜色区分不同节点   概率椭圆表示位置不确定性
                 </div>
                 <div id="view-skeleton" class="sv2-chart-area">
 

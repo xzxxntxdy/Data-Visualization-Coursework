@@ -342,7 +342,7 @@ export function renderBodyRegionComparison(container) {
     .style("font-size", "13px")
     .style("font-weight", "600")
     .style("fill", "#475569")
-    .text("COCO 2017数据集(273K人物)关键点可见度 % - 真实标注值");
+    .text("COCO 2017数据集 人物关键点真实可见度");
 
   // Y轴 - YOLO模型在117K张新图片上的推测置信度
   const yScale = d3.scaleLinear()
@@ -367,7 +367,7 @@ export function renderBodyRegionComparison(container) {
     .style("font-size", "13px")
     .style("font-weight", "600")
     .style("fill", "#475569")
-    .text("YOLO模型在117K张新图片上的推测平均置信度");
+    .text("YOLO模型在11万张图片上的推测的各节点平均置信度");
 
   // 参考区域背景 - 高COCO可见度高置信度区
   svg.append("rect")

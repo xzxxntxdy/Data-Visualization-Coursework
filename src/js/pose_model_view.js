@@ -189,7 +189,7 @@ function renderNewHeader(container) {
   header.append("p")
     .html(`
       <strong style="color: ${COLORS.textMain};">目标：</strong>
-      从175张COCO数据集图像的YOLOv8推理结果中，深度理解模型学到了什么<br/>
+      从11万张COCO数据集图像的YOLOv8重新推理的结果中，深度理解模型学到了什么<br/>
       <span style="font-size: 13px; color: ${COLORS.textMuted}; display: block; margin-top: 8px;">
         <strong>核心问题：</strong> 
         模型的置信度是否可靠？ → 推理结果展示判断的合理性 | 
