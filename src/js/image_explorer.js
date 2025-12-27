@@ -81,7 +81,7 @@ function generateImageSelectionButtons(imageIds) {
           ⬇️ 点击选择图像查看YOLOv8推理结果
         </div>
         <div style="font-size: 12px; color: #64748b; line-height: 1.5;">
-          从175张COCO数据集中选择示例 • 对比原始图像与推理可视化 • 查看17个关键点的置信度热力图
+          从11万张COCO数据集中选择示例 • 对比原始图像与推理可视化 • 查看17个关键点的置信度热力图
         </div>
       </div>
       <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; width: 100%;">`;
