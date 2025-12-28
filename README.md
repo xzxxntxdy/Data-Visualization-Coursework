@@ -237,12 +237,18 @@ person_keypoints_train2017.json                             (17 关键点统计)
 
 | 文件 | 实际大小 | 内容 | 用途 |
 |------|----------|------|------|
-| `hero_image.jpg` | 变动 | 筛选出的最佳图片 | 门户背景、故事叙事 |
-| `hero_data.json` | \~19 KB | `hero_image` 的所有标注数据 | 门户叙事数据 |
-| `overview.jpg` | \~538 KB | 随机采样的图片拼成的概览图 | 门户背景，展示数据集概貌 |
-| `spatial_data.json` | \~2 MB | 8,000 条采样标注、80 类别统计 | 空间视图 |
-| `semantic_data.json` | \~206 KB | 80×80 共现矩阵、条件概率 | 语义视图 |
-| `pose_stats.json` | \~1.0 MB | 17 关键点可见性统计、骨架定义 | 姿态视图 |
+| `hero_image.jpg` | ~214 KB | 筛选出的最佳图片 | 门户背景、故事叙事 |
+| `hero_data.json` | ~17 KB | `hero_image` 的所有标注数据 | 门户叙事数据 |
+| `overview.jpg` | ~537 KB | 随机采样的图片拼成的概览图 | 门户背景，展示数据集概貌 |
+| `spatial_data.json` | ~2 MB | 8,000 条采样标注、80 类别统计 | 空间视图 |
+| `semantic_data.json` | ~192 KB | 80×80 共现矩阵、条件概率 | 语义视图 |
+| `pose_stats.json` | ~1.0 MB | 17 关键点可见性统计、骨架定义 | 姿态视图 |
+| `spatial_prior_data.json` | ~9 KB | 77 个类别的空间先验数据 | 空间先验实验 |
+| `pose_analysis_results.json` | ~25 KB | YOLOv8 姿态分析结果 | 姿态模型分析 |
+| `coco_pose_results.json` | ~462 KB | YOLOv8 推理结果汇总 | 姿态模型分析 |
+| `coco_vs_yolo_scatter.json` | ~7 KB | COCO 可见度 vs YOLO 置信度 | 散点图对比 |
+| `blank_probs.json` | ~5 KB | 纯黑输入的模型预测 | 模型偏差实验 |
+| `blank_probs_white.json` | ~5 KB | 纯白输入的模型预测 | 模型偏差实验 |
 
 -----
 
@@ -385,7 +391,7 @@ Data-Visualization-Coursework/
 │   └── yolov8n-pose.pt               # YOLOv8 姿态模型
 │
 ├── 📁 src/
-│   ├── 📄 index.html            # 主页面
+│   ├── 📄 index.html            # 主页面（包含所有视图容器）
 │   │
 │   ├── 📁 js/
 │   │   ├── story_main.js        # 门户滚动叙事
@@ -394,21 +400,26 @@ Data-Visualization-Coursework/
 │   │   ├── pose_view.js         # 姿态视图模块
 │   │   ├── bias_view.js         # 模型偏差实验视图
 │   │   ├── spatial_prior_view.js     # 空间先验实验视图
+│   │   ├── pose_model_view.js        # 姿态模型综合视图
 │   │   ├── pose_model_analysis.js    # 姿态模型分析视图
 │   │   ├── image_explorer.js    # YOLOv8 推理示例浏览器
-│   │   └── distribution_matrix.js
+│   │   └── distribution_matrix.js    # 分布矩阵可视化
 │   │
 │   ├── 📁 data/
-│   │   ├── instances_train2017.json      # COCO 实例标注
-│   │   ├── person_keypoints_train2017.json
+│   │   ├── instances_train2017.json      # COCO 实例标注（原始）
+│   │   ├── person_keypoints_train2017.json # COCO 关键点标注（原始）
 │   │   ├── hero_data.json                # 门户叙事数据
-│   │   ├── semantic_data.json            # 预处理：语义
-│   │   ├── spatial_data.json             # 预处理：空间
-│   │   ├── pose_stats.json               # 预处理：姿态
+│   │   ├── hero_image.jpg / hero_pose.png / hero_semantic.png / hero_spatial.png
+│   │   ├── overview.jpg                  # 门户背景概览图
+│   │   ├── semantic_data.json            # 预处理：语义共现
+│   │   ├── spatial_data.json             # 预处理：空间分布
+│   │   ├── pose_stats.json               # 预处理：姿态统计
 │   │   ├── spatial_prior_data.json       # 空间先验实验数据
 │   │   ├── pose_analysis_results.json    # 姿态模型分析数据
 │   │   ├── coco_pose_results.json        # YOLOv8 推理结果
-│   │   └── coco_vs_yolo_scatter.json     # COCO vs YOLO 对比数据
+│   │   ├── coco_vs_yolo_scatter.json     # COCO vs YOLO 对比数据
+│   │   ├── blank_probs.json              # 纯黑输入预测
+│   │   └── blank_probs_white.json        # 纯白输入预测
 │   │
 │   ├── 📁 visualized/           # YOLOv8 推理可视化图片
 │   ├── 📁 network_img/          # 网络架构图
@@ -416,15 +427,18 @@ Data-Visualization-Coursework/
 │   └── 📁 icon/                 # 静态图标资源
 │
 ├── 📁 assets/                   # README 展示图片
-│   ├── banner.png
-│   ├── spatial_view.png
-│   ├── semantic_view.png
-│   ├── pose_view.png
-│   ├── 类别先验偏差分析.png
-│   ├── 空间先验实验.png
-│   └── 综合姿态及模型分析.png
+│   ├── banner.png               # 项目横幅
+│   ├── architecture.png         # 系统架构图
+│   ├── portal_demo.png          # 门户演示截图
+│   ├── spatial_view.png         # 空间视图截图
+│   ├── semantic_view.png        # 语义视图截图
+│   ├── pose_view.png            # 姿态视图截图
+│   ├── 类别先验偏差分析.png       # 模型偏差实验截图
+│   ├── 空间先验实验.png           # 空间先验实验截图
+│   └── 综合姿态及模型分析.png     # 姿态模型分析截图
 │
-└── 📄 presentation.typ          # Typst 演示文稿
+├── 📄 presentation.typ          # Typst 演示文稿
+└── 📄 presentation.pdf          # 演示文稿 PDF
 ```
 
 -----
