@@ -51,3 +51,5 @@ src/data/person_keypoints_val2017.json
 /data/train2017.zip
 train/spatial
 /extract_attention_project/test_images
+.vercel
+.env*.local
