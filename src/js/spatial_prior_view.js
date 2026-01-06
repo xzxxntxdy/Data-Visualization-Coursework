@@ -239,11 +239,6 @@ function buildLayout() {
                 <div class="sp-heatmap-subtitle">噪声输入下模型的 Cross-Attention</div>
                 <div id="sp-heatmap-attn" class="sp-heatmap"></div>
               </div>
-              <div class="sp-heatmap-wrap">
-                <div class="sp-heatmap-title">📈 差异图</div>
-                <div class="sp-heatmap-subtitle">Attention - GT (红=高估, 蓝=低估)</div>
-                <div id="sp-heatmap-diff" class="sp-heatmap"></div>
-              </div>
             </div>
           </div>
 
@@ -517,13 +512,9 @@ function renderCompareHeatmaps(categoryName) {
   // 这里用 GT 分布 + 少量噪声来模拟，实际项目中应加载真实数据
   const attnMap = simulateAttentionMap(gtMap);
 
-  // 差异图
-  const diffMap = gtMap.map((row, i) => row.map((v, j) => attnMap[i][j] - v));
-
-  // 渲染三个热力图
+  // 渲染两个热力图
   renderSingleHeatmap("sp-heatmap-gt", gtMap, "gt");
   renderSingleHeatmap("sp-heatmap-attn", attnMap, "attn");
-  renderSingleHeatmap("sp-heatmap-diff", diffMap, "diff");
 }
 
 function computeGTDistribution(categoryName) {
@@ -1096,8 +1087,8 @@ function injectStyles() {
     }
 
     .sp-heatmap {
-      width: 350px;
-      height: 350px;
+      width: 450px;
+      height: 450px;
       background: ${COLORS.bg};
       border-radius: 8px;
       display: flex;
