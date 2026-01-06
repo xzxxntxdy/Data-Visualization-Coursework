@@ -26,6 +26,7 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
+# COCO 原始标注文件（太大，不上传）
 src/data/captions_train2017.json
 src/data/captions_val2017.json
 src/data/instances_train2017.json
@@ -33,6 +34,19 @@ src/data/instances_val2017.json
 src/data/person_keypoints_train2017.json
 src/data/person_keypoints_val2017.json
 
+# 注意：以下预处理后的小 JSON 文件需要上传，请勿忽略：
+# - src/data/spatial_data.json (~2MB)
+# - src/data/semantic_data.json (~192KB)
+# - src/data/pose_stats.json (~1MB)
+# - src/data/hero_data.json (~17KB)
+# - src/data/spatial_prior_data.json (~9KB)
+# - src/data/blank_probs.json (~5KB)
+# - src/data/blank_probs_white.json (~5KB)
+# - src/data/pose_analysis_results.json (~25KB)
+# - src/data/coco_pose_results.json (~462KB)
+# - src/data/coco_vs_yolo_scatter.json (~7KB)
+
+# 大型数据目录
 /data/
 /data/train2017.zip
 train/spatial
