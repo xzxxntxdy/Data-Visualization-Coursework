@@ -9,34 +9,34 @@ import spatialData from "../data/spatial_data.json";
 // 🎨 统一设计系统 - Design Tokens
 // ═══════════════════════════════════════════════════════════════════
 const DESIGN = {
-    // 主色调 - 深靛蓝系 (Refined Dark Theme)
+    // 主色调 - 深靛蓝系
     colors: {
-        primary: "#818cf8",      // Indigo 400
-        primaryDark: "#6366f1",  // Indigo 500
-        primaryLight: "rgba(129, 140, 248, 0.15)",
+        primary: "#3b82f6",      // 主强调色
+        primaryDark: "#1d4ed8",
+        primaryLight: "#93c5fd",
         
-        // 语义色 - 尺度分类（全局统一 - Pastel/Vibrant mix）
+        // 语义色 - 尺度分类（全局统一）
         scale: {
-            small: "#34d399",    // Emerald 400
-            medium: "#fbbf24",   // Amber 400
-            large: "#f472b6",    // Pink 400 (Replacing Red for smoother look)
+            small: "#10b981",    // 翡翠绿
+            medium: "#f59e0b",   // 琥珀橙
+            large: "#ef4444",    // 玫瑰红
         },
         
-        // 等高线渐变 - Deep Slate to Indigo
-        contour: ["#0f172a", "#1e1b4b", "#312e81", "#4f46e5", "#818cf8"],
+        // 等高线渐变 - 深色系增强冲击力
+        contour: ["#f0f9ff", "#bae6fd", "#38bdf8", "#0284c7", "#0c4a6e"],
         
         // 中性色
         text: {
-            primary: "#f8fafc",   // Slate 50
-            secondary: "#94a3b8", // Slate 400
-            muted: "#64748b",     // Slate 500
+            primary: "#0f172a",
+            secondary: "#475569",
+            muted: "#94a3b8",
         },
         bg: {
-            page: "transparent",
-            card: "rgba(15, 23, 42, 0.6)", // Slate 900 Glass
-            subtle: "rgba(255, 255, 255, 0.03)",
+            page: "#f8fafc",
+            card: "#ffffff",
+            subtle: "#f1f5f9",
         },
-        border: "rgba(255, 255, 255, 0.08)",
+        border: "#e2e8f0",
     },
     
     // 字体层级

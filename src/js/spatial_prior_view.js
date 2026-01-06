@@ -11,21 +11,21 @@ import transformerArchImg from "../network_img/transformerbbox.jpg";
 // 🎨 设计系统
 // ═══════════════════════════════════════════════════════════════════
 const COLORS = {
-  bg: "transparent",
-  cardBg: "rgba(15, 23, 42, 0.6)", // Slate 900 Glass
-  textMain: "#f8fafc",   // Slate 50
-  textMuted: "#94a3b8",  // Slate 400
-  border: "rgba(255, 255, 255, 0.08)",
-  primary: "#818cf8",    // Indigo 400
-  primaryLight: "rgba(129, 140, 248, 0.15)",
-  success: "#34d399",    // Emerald 400
-  warning: "#fbbf24",    // Amber 400
-  danger: "#f87171",     // Rose 400
-  accent: "#a78bfa",     // Violet 400
+  bg: "#f8fafc",
+  cardBg: "#ffffff",
+  textMain: "#1e293b",
+  textMuted: "#64748b",
+  border: "#e2e8f0",
+  primary: "#6366f1",
+  primaryLight: "#a5b4fc",
+  success: "#10b981",
+  warning: "#f59e0b",
+  danger: "#ef4444",
+  accent: "#8b5cf6",
   
-  // Heatmap gradients (Dark Theme)
-  heatmap: ["#0f172a", "#1e1b4b", "#312e81", "#4f46e5", "#818cf8"],
-  attnGradient: ["#451a03", "#78350f", "#b45309", "#d97706", "#fbbf24"],
+  // 热力图渐变
+  heatmap: ["#f0f9ff", "#bae6fd", "#38bdf8", "#0284c7", "#0c4a6e"],
+  attnGradient: ["#fef3c7", "#fcd34d", "#f59e0b", "#d97706", "#92400e"],
 };
 
 // 当前选中的类别

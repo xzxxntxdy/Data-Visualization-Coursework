@@ -7,14 +7,14 @@ import networkImgUrl from "../network_img/resnet18.png";
 const MARGIN = { top: 20, right: 20, bottom: 20, left: 20 };
 // Modern UI Colors
 const COLORS = {
-  bg: "transparent",
-  cardBg: "rgba(15, 23, 42, 0.6)", // Slate 900 Glass
-  textMain: "#f8fafc",   // Slate 50
-  textMuted: "#94a3b8",  // Slate 400
-  border: "rgba(255, 255, 255, 0.08)",
-  primary: "#818cf8", // Indigo 400
-  danger: "#f87171",  // Rose 400
-  line: "#64748b"     // Slate 500
+  bg: "#f8fafc",
+  cardBg: "#ffffff",
+  textMain: "#1e293b",
+  textMuted: "#64748b",
+  border: "#e2e8f0",
+  primary: "#6366f1", // Indigo
+  danger: "#ef4444",  // Red for 'person'
+  line: "#cbd5e1"
 };
 
 let biasResizeObserver = null;
