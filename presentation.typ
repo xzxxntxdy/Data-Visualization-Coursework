@@ -643,7 +643,7 @@
 // ============================================================================
 // 案例分析 2
 // ============================================================================
-== 案例分析 2：餐桌场景的语义关联
+== 案例分析 2：人物类别的语义关联
 
 #set text(size: 0.95em)
 #grid(
@@ -652,18 +652,18 @@
   [
     === 分析过程
 
-    + 在语义视图中单击节点 `dining table` 将其锁定为焦点。
+    + 在语义视图中单击节点 `person` 将其锁定为焦点。
     + *观察条件概率面板*：
-      - P(chair | dining table) = 0.43
-      - P(cup | dining table) = 0.40
-    + *观察力导向图*：与 `dining table` 强相关的节点自然地向其聚拢。
+      - P(chair | person) = 0.125
+      - P(car | person) = 0.13
+    + *观察力导向图*：`person` 作为 COCO 中最高频类别，与大量物体存在共现关系。
 
     #v(0.5em)
 
     === 发现与意义
 
-    - *上下文知识挖掘*：量化了"餐桌"场景的上下文信息。
-    - *模型能力提升*：利用与"餐桌"的强关联可提高遮挡场景下的检测置信度。
+    - *"人物中心"特性*：`person` 是多数场景的核心，与交通工具、家具、运动器材等均有显著关联。
+    - *模型偏差来源*：高共现率解释了模型对 `person` 类的强烈先验偏差。
   ],
   [
     #image("assets/case2.png", width: 100%)
@@ -809,7 +809,7 @@
   #text(fill: gray)[
     代码仓库：#link("https://github.com/xzxxntxdy/Data-Visualization-Coursework")[https://github.com/xzxxntxdy/Data-Visualization-Coursework]
 
-    演示地址：#link("http://localhost:8080")[localhost:8080]
+    在线演示：#link("https://datavis-five.vercel.app/")[datavis-five.vercel.app]
   ]
 
   #v(2em)
