@@ -306,7 +306,8 @@ npm start
 
 ### 访问应用
 
-打开浏览器访问 **http://localhost:8080**
+- 🌐 **在线演示**：[https://datavis-five.vercel.app/](https://datavis-five.vercel.app/)
+- 🖥️ **本地访问**：打开浏览器访问 **http://localhost:8080**
 
 -----
 

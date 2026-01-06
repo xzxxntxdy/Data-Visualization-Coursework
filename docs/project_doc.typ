@@ -515,4 +515,10 @@ Data-Visualization-Coursework/
   #text(size: 10pt, fill: gray)[
     代码仓库：https://github.com/xzxxntxdy/Data-Visualization-Coursework
   ]
+
+  #v(0.3cm)
+
+  #text(size: 10pt, fill: gray)[
+    在线演示：https://datavis-five.vercel.app/
+  ]
 ]
