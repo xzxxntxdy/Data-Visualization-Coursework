@@ -4,27 +4,27 @@ import { initImageExplorer } from "./image_explorer.js";
 import { initPoseModelAnalysis } from "./pose_model_analysis.js";
 
 const COLORS = {
-  bg: "#f8fafc",
-  cardBg: "#ffffff",
-  textMain: "#1e293b",
-  textMuted: "#64748b",
-  border: "#e2e8f0",
-  primary: "#6366f1",
-  success: "#10b981",
-  warning: "#f59e0b",
-  danger: "#ef4444",
+  bg: "transparent",
+  cardBg: "rgba(15, 23, 42, 0.6)", // Slate 900 Glass
+  textMain: "#f8fafc",   // Slate 50
+  textMuted: "#94a3b8",  // Slate 400
+  border: "rgba(255, 255, 255, 0.08)",
+  primary: "#818cf8", // Indigo 400
+  success: "#34d399", // Emerald 400
+  warning: "#fbbf24", // Amber 400
+  danger: "#f87171",  // Rose 400
   skeleton: {
-    high: "#ef4444",      // 红色 - 高敏感性
-    medium: "#f59e0b",    // 橙色 - 中等敏感性
-    low: "#10b981",       // 绿色 - 低敏感性
-    bone: "#94a3b8"
+    high: "#f87171",      // Red - High Sensitivity
+    medium: "#fbbf24",    // Amber - Medium
+    low: "#34d399",       // Emerald - Low
+    bone: "#94a3b8"       // Slate 400
   },
   sensitivity: {
-    high: "#ef4444",      // 红色 - >0.85
-    medium: "#f59e0b",    // 橙色 - 0.65-0.85
-    low: "#10b981"        // 绿色 - <0.65
+    high: "#f87171",
+    medium: "#fbbf24",
+    low: "#34d399"
   },
-  heatmap: ["#ffffffff", "#ffffffff", "#ffffffff", "#ff0000ff", "#ff0000ff"]
+  heatmap: ["#1e1b4bff", "#312e81ff", "#4338caff", "#818cf8ff", "#a5b4fcff"]
 };
 
 let poseModelData = null;

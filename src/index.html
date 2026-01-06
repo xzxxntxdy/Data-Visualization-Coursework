@@ -1,954 +1,13 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>COCO-Verse: Semantic Analysis</title>
-    <style>
-        :root {
-            --bg-body: #f8fafc;
-            --bg-panel: #ffffff;
-            --sidebar-bg: #0f172a;
-            --sidebar-text: #94a3b8;
-            --sidebar-text-hover: #f1f5f9;
-            --accent: #6366f1;
-            --accent-hover: #4f46e5;
-            --accent-light: #e0e7ff;
-            --accent-text: #4338ca;
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-            --border-color: #e2e8f0;
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            --radius-md: 12px;
-        }
-
-        body {
-            margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-body);
-            color: var(--text-main);
-            overflow: hidden;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        /* ========== Portal 层 ========== */
-
-        .portal-layer {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-            background: radial-gradient(circle at top, #020617 0, #020617 60%, #000 100%);
-            color: #e5e7eb;
-            opacity: 1;
-            transition: opacity 0.4s ease, filter 0.4s ease;
-        }
-
-        .portal-hidden {
-            display: none;
-        }
-
-        .portal-bg {
-            position: absolute;
-            inset: 0;
-            overflow: hidden;
-            z-index: 0;
-        }
-
-        .bg-frame {
-            position: absolute;
-            inset: 0;
-            background-size: cover;
-            background-position: center;
-            opacity: 0;
-            transition: opacity 0.8s ease;
-            filter: grayscale(0.1) brightness(0.5);
-        }
-
-        .bg-frame.active {
-            opacity: 0.75;
-        }
-
-        .bg-frame[data-bg-frame="intro"] {
-            background-image: url("./bg/bg_intro_lens.png");
-        }
-        .bg-frame[data-bg-frame="spatial"] {
-            background-image: url("./bg/bg_spatial_outdoor.png");
-        }
-        .bg-frame[data-bg-frame="semantic"] {
-            background-image: url("./bg/bg_semantic_social.png");
-        }
-        .bg-frame[data-bg-frame="pose"] {
-            background-image: url("./bg/bg_pose_biometric.png");
-        }
-
-        .portal-main {
-            position: relative;
-            display: grid;
-            grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-            gap: 16px;                 /* 原来 24px -> 16px，减少左右空隙 */
-            padding: 16px 24px;        /* 原来 20px 32px -> 更紧一点 */
-            box-sizing: border-box;
-            height: 100%;
-            z-index: 1;
-        }
-
-        @media (max-width: 1100px) {
-            .portal-main {
-                grid-template-columns: 1fr;
-                padding: 16px;
-            }
-        }
-
-        .hero-stage {
-            position: relative;
-            /* macOS 磨砂玻璃：淡色 + 高 blur + 高饱和度 */
-            background: rgba(255, 255, 255, 0.24);
-            backdrop-filter: blur(26px) saturate(180%);
-            -webkit-backdrop-filter: blur(26px) saturate(180%);
-            border-radius: 18px;
-            border: 1px solid rgba(255, 255, 255, 0.35);
-            box-shadow: 0 14px 32px rgba(15, 23, 42, 0.35);
-            padding: 12px 14px 14px;   /* 比之前更紧凑，减少容器内部留白 */
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            overflow: hidden;
-            transform-origin: center;
-            transition: transform 0.4s ease, opacity 0.4s ease;
-        }
-
-
-        .hero-stage-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-        }
-
-        .hero-title-block h1 {
-            margin: 0;
-            font-size: 22px;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-        }
-
-        .hero-title-block p {
-            margin: 4px 0 0;
-            color: #cbd5f5;
-            font-size: 12px;
-        }
-
-        .hero-status {
-            font-size: 11px;
-            color: #9ca3af;
-            line-height: 1.5;
-            text-align: right;
-        }
-
-        .hero-status span {
-            color: #4ade80;
-        }
-
-        #hero-stage-frame {
-            position: relative;
-            flex: 1;
-            min-height: 260px;
-            border-radius: 14px;
-            overflow: hidden;
-            background: transparent;
-        }
-
-
-        .hero-frame {
-            position: absolute;
-            inset: 0;
-            background-size: contain;
-            background-position: center;
-            background-repeat: no-repeat;
-            opacity: 0;
-            transition: opacity 0.5s ease;
-        }
-
-        .hero-frame.active {
-            opacity: 1;
-        }
-
-        .hero-frame[data-hero-frame="intro"] {
-            background-image: url("./data/hero_image.jpg");
-        }
-        .hero-frame[data-hero-frame="spatial"] {
-            background-image: url("./data/hero_spatial.png");
-        }
-        .hero-frame[data-hero-frame="semantic"] {
-            background-image: url("./data/hero_semantic.png");
-        }
-        .hero-frame[data-hero-frame="pose"] {
-            background-image: url("./data/hero_pose.png");
-        }
-
-        #hero-overlay {
-            position: absolute;
-            left: 0;
-            top: 0;
-            pointer-events: none;
-        }
-
-        .hero-meta-strip {
-            display: flex;
-            align-items: center;
-            gap: 18px;
-            font-size: 11px;
-            color: #e5e7eb;
-        }
-
-        .hero-meta-strip .dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 999px;
-            background: #22c55e;
-            box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.25);
-        }
-
-        .hero-stats {
-            margin-left: auto;
-            display: flex;
-            gap: 16px;
-        }
-
-        .hero-stat-item {
-            text-align: right;
-        }
-
-        .hero-stat-label {
-            color: #9ca3af;
-            font-size: 11px;
-        }
-
-        .hero-stat-value {
-            font-size: 13px;
-            font-weight: 600;
-        }
-
-        .hero-captions {
-            margin: 8px 0 0;
-            padding-left: 16px;
-            font-size: 11px;
-            color: #cbd5f5;
-        }
-
-        .hero-captions li + li {
-            margin-top: 2px;
-        }
-
-        .coco-info {
-            margin: 12px 0 0;
-            padding: 12px 14px;
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-
-            /* 新增：左右排版 */
-            display: flex;
-            gap: 12px;
-            align-items: flex-start;
-        }
-
-        .coco-info-text {
-            flex: 1 1 auto;
-        }
-
-        .coco-info-thumb {
-            flex: 0 0 auto;
-        }
-
-        .coco-info-thumb img {
-            display: block;
-            max-width: 180px;          /* 你可以根据视觉再调，比如 160/200 */
-            border-radius: 8px;
-            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.45);
-            object-fit: cover;
-        }
-
-
-        .coco-info h4 {
-            margin: 0 0 8px;
-            font-size: 12px;
-            font-weight: 700;
-            color: #e0e7ff;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-        }
-
-        .coco-info p {
-            margin: 4px 0;
-            font-size: 11px;
-            line-height: 1.6;
-            color: #cbd5f5;
-        }
-
-        .coco-info .highlight {
-            color: #a5b4fc;
-            font-weight: 600;
-        }
-
-        #story-scroll {
-            background: rgba(255, 255, 255, 0.18);
-            backdrop-filter: blur(24px) saturate(180%);
-            -webkit-backdrop-filter: blur(24px) saturate(180%);
-            border-radius: 18px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            padding: 14px 16px 16px;
-            box-shadow: 0 14px 32px rgba(15, 23, 42, 0.35);
-            box-sizing: border-box;
-            display: grid;
-            grid-template-rows: repeat(4, 1fr);
-            gap: 12px;
-            overflow: hidden;
-        }
-
-
-        .story-step {
-            padding: 12px 10px 12px;
-            border-radius: 12px;
-            border: 1px solid transparent;
-            background: radial-gradient(circle at top left, rgba(99, 102, 241, 0.08), transparent 55%);
-            transition: border-color 0.25s ease, background 0.25s ease, transform 0.25s ease;
-            cursor: pointer;
-            height: 100%;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            position: relative;
-        }
-
-        .story-step-content {
-            flex: 0 0 66.666%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding-right: 10px;
-        }
-
-        .story-step-visual {
-            flex: 0 0 33.333%;
-            height: 80%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* Scene 0: 图片图标 */
-        .story-step[data-state="intro"] .story-step-visual::before {
-            content: '📷';
-            font-size: 48px;
-            opacity: 0.8;
-        }
-
-        /* Scene 1: 空间定位 - 随机方块（大且重叠） */
-        .story-step[data-state="spatial"] .story-step-visual {
-            background: 
-                linear-gradient(rgba(99, 102, 241, 0.6), rgba(99, 102, 241, 0.6)) 20% 25% / 45px 38px no-repeat,
-                linear-gradient(rgba(34, 197, 94, 0.6), rgba(34, 197, 94, 0.6)) 55% 20% / 52px 42px no-repeat,
-                linear-gradient(rgba(245, 158, 11, 0.6), rgba(245, 158, 11, 0.6)) 40% 45% / 48px 35px no-repeat,
-                linear-gradient(rgba(239, 68, 68, 0.6), rgba(239, 68, 68, 0.6)) 65% 50% / 40px 44px no-repeat,
-                linear-gradient(rgba(168, 85, 247, 0.6), rgba(168, 85, 247, 0.6)) 30% 60% / 50px 36px no-repeat,
-                linear-gradient(rgba(14, 165, 233, 0.6), rgba(14, 165, 233, 0.6)) 70% 65% / 42px 40px no-repeat,
-                linear-gradient(rgba(236, 72, 153, 0.6), rgba(236, 72, 153, 0.6)) 45% 70% / 46px 38px no-repeat,
-                linear-gradient(rgba(132, 204, 22, 0.6), rgba(132, 204, 22, 0.6)) 15% 50% / 38px 42px no-repeat,
-                rgba(255, 255, 255, 0.05);
-        }
-
-/* Scene 2: 语义网络 - 三个球用线连接 (优化版) */
-.story-step[data-state="semantic"] .story-step-visual {
-    position: relative;
-    width: 100%; /* 确保容器有尺寸 */
-    height: 100%;
-}
-
-/* 1. 绘制连线 (位于底层) */
-.story-step[data-state="semantic"] .story-step-visual::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    /* 使用 SVG data URI 绘制连线。
-       M30 30 = 移动到 30% 30%
-       L70 30 = 连线到 70% 30%
-       L50 70 = 连线到 50% 70%
-       Z = 闭合路径 (回到起点)
-    */
-    background-image: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 30 L70 30 L50 70 Z' fill='none' stroke='rgba(99, 102, 241, 0.7)' stroke-width='2'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: 100% 100%;
-    z-index: 1; /* 确保线在球下面 */
-}
-
-
-/* 2. 绘制三个小球 (位于顶层) */
-.story-step[data-state="semantic"] .story-step-visual::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 2; /* 盖住连线的端头 */
-    
-    /* 三个球的位置与上面的 SVG 坐标 (30,30), (70,30), (50,70) 完美对应 
-       注意：为了边缘平滑，transparent 从 14px 改为 15px (简单的抗锯齿处理)
-    */
-    background: 
-        radial-gradient(circle, #6366f1 0, #6366f1 14px, transparent 15px) 30% 27% / 30px 30px no-repeat,
-        radial-gradient(circle, #6366f1 0, #6366f1 14px, transparent 15px) 70% 27% / 30px 30px no-repeat,
-        radial-gradient(circle, #6366f1 0, #6366f1 14px, transparent 15px) 50% 70% / 30px 30px no-repeat;
-}
-
-.story-step[data-state="pose"] .story-step-visual {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    background: none;
-    /* 可选：添加一个浅色网格背景以便更好地观察，不需要可删除 */
-    /* background-image: linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px);
-    background-size: 20px 20px; */
-}
-/* Scene 3: 姿态骨架 - 细线圆点版 */
-.story-step[data-state="pose"] .story-step-visual {
-    position: relative;
-    width: 100%;
-    height: 100%;
-}
-
-.story-step[data-state="pose"] .story-step-visual::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1;
-
-    /* 关键修改：
-       1. 骨架线条 (第一个 g 标签): stroke-width='1.5' (原为 3)
-       2. 关节圆点 (第二个 g 标签): r='10' (原为 2.2), stroke-width='1.5' (增加白色描边厚度，增加层次感)
-    */
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg stroke='%234a5568' stroke-width='1.5' stroke-linecap='round' fill='none'%3E%3C!-- 躯干 --%3E%3Cline x1='35' y1='20' x2='65' y2='20' /%3E%3Cline x1='40' y1='60' x2='60' y2='60' /%3E%3Cline x1='35' y1='20' x2='40' y2='60' /%3E%3Cline x1='65' y1='20' x2='60' y2='60' /%3E%3C!-- 头部连接 --%3E%3Cline x1='35' y1='20' x2='47' y2='7' /%3E%3Cline x1='65' y1='20' x2='53' y2='7' /%3E%3Cline x1='47' y1='7' x2='50' y2='5' /%3E%3Cline x1='53' y1='7' x2='50' y2='5' /%3E%3Cline x1='47' y1='7' x2='50' y2='11' /%3E%3Cline x1='53' y1='7' x2='50' y2='11' /%3E%3C!-- 手臂 --%3E%3Cline x1='35' y1='20' x2='23' y2='40' /%3E%3Cline x1='23' y1='40' x2='30' y2='52' /%3E%3Cline x1='65' y1='20' x2='77' y2='40' /%3E%3Cline x1='77' y1='40' x2='70' y2='52' /%3E%3C!-- 腿部 --%3E%3Cline x1='40' y1='60' x2='43' y2='78' /%3E%3Cline x1='43' y1='78' x2='45' y2='95' /%3E%3Cline x1='60' y1='60' x2='57' y2='78' /%3E%3Cline x1='57' y1='78' x2='55' y2='95' /%3E%3C/g%3E%3C!-- 2. 关节圆点 (圆圈更明显) --%3E%3Cg r='10' stroke='white' stroke-width='1.5'%3E%3C!-- 头部 --%3E%3Ccircle cx='50' cy='5' fill='orange' /%3E%3Ccircle cx='47' cy='7' fill='%2300ff00' /%3E%3Ccircle cx='53' cy='7' fill='%23aaff00' /%3E%3Ccircle cx='50' cy='11' fill='%23ff0055' /%3E%3C!-- 肩部 --%3E%3Ccircle cx='35' cy='20' fill='cyan' /%3E%3Ccircle cx='65' cy='20' fill='cyan' /%3E%3C!-- 肘部 --%3E%3Ccircle cx='23' cy='40' fill='%236600ff' /%3E%3Ccircle cx='77' cy='40' fill='%230066ff' /%3E%3C!-- 手腕 --%3E%3Ccircle cx='30' cy='52' fill='%23ff00cc' /%3E%3Ccircle cx='70' cy='52' fill='%23aa00ff' /%3E%3C!-- 髋部 --%3E%3Ccircle cx='40' cy='60' fill='red' /%3E%3Ccircle cx='60' cy='60' fill='%23ff00cc' /%3E%3C!-- 膝盖 --%3E%3Ccircle cx='43' cy='78' fill='blue' /%3E%3Ccircle cx='57' cy='78' fill='lime' /%3E%3C!-- 脚踝 --%3E%3Ccircle cx='45' cy='95' fill='orange' /%3E%3Ccircle cx='55' cy='95' fill='yellow' /%3E%3C/g%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: contain; 
-}
-        .story-step h3 {
-            margin: 0 0 6px;
-            font-size: 18px;
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-            color: #c7d2fe;
-            font-weight: 800;
-            text-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
-        }
-
-        .story-step h2 {
-            margin: 2px 0 8px;
-            font-size: 24px;
-            color: #f1f5f9;
-            font-weight: 700;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-        }
-
-        .story-step p {
-            margin: 3px 0;
-            font-size: 13px;
-            color: #e0e7ff;
-            line-height: 1.6;
-        }
-
-        .story-step p small {
-            font-size: 12px;
-            color: #c7d2fe;
-            font-weight: 600;
-
-            /* 新增：让 small 看起来像可点击的小按钮 */
-            display: inline-block;
-            padding: 2px 10px;
-            border-radius: 999px;
-            border: 1px solid rgba(148, 163, 184, 0.85);   /* 稍微亮一点的边框 */
-            background: rgba(15, 23, 42, 0.65);            /* 深色底 */
-            cursor: pointer;
-            transition: all 0.18s ease;
-        }
-
-        .story-step p small:hover {
-            border-color: #6366f1;
-            background: rgba(79, 70, 229, 0.35);
-            box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.4);
-        }
-
-        .story-step:hover {
-            border-color: #6366f1;
-            background: radial-gradient(circle at top left, rgba(99, 102, 241, 0.15), transparent 55%);
-            transform: translateY(-2px);
-        }
-
-        .story-step.active {
-            border-color: #6366f1;
-            background: radial-gradient(circle at top left, rgba(99, 102, 241, 0.25), transparent 55%);
-            transform: translateY(-1px);
-        }
-
-        .story-step small {
-            font-size: 11px;
-            color: #9ca3af;
-        }
-
-
-
-        #aggregate-flash {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            padding: 8px 16px;
-            border-radius: 999px;
-            background: radial-gradient(circle at top left, #6366f1, #22c55e);
-            color: #f9fafb;
-            font-size: 11px;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.9);
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-            z-index: 20;
-        }
-
-        #aggregate-flash.show {
-            opacity: 1;
-        }
-
-        .portal-layer.archiving {
-            filter: blur(1.5px);
-        }
-
-        .hero-stage.archiving {
-            transform: scale(0.9);
-            opacity: 0.25;
-        }
-
-        .hero-stage.returning {
-            animation: portal-return 0.8s ease both;
-        }
-
-        @keyframes portal-return {
-            0% {
-                transform: scale(0.85);
-                opacity: 0;
-            }
-            100% {
-                transform: scale(1);
-                opacity: 1;
-            }
-        }
-
-        /* ========== Dashboard 区（原逻辑） ========== */
-
-        .dashboard {
-            display: grid;
-            grid-template-columns: 240px 1fr;
-            gap: 20px;
-            padding: 20px;
-            box-sizing: border-box;
-            height: 100vh;
-            opacity: 0;
-            transition: opacity 0.4s ease;
-        }
-
-        .dashboard.dashboard-hidden {
-            display: none;
-        }
-
-        .sidebar {
-            background: var(--sidebar-bg);
-            color: var(--sidebar-text);
-            border-radius: var(--radius-md);
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            box-shadow: var(--shadow-md);
-        }
-
-        .sidebar h2 {
-            margin: 0;
-            font-size: 18px;
-            font-weight: 700;
-            color: #fff;
-            letter-spacing: -0.5px;
-        }
-
-        .sidebar p {
-            color: #64748b !important;
-            margin-top: 4px;
-        }
-
-        .nav-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            margin-top: 12px;
-        }
-
-        .nav-item {
-            width: 100%;
-            text-align: left;
-            padding: 12px 14px;
-            border-radius: 8px;
-            border: 1px solid transparent;
-            background: transparent;
-            color: var(--sidebar-text);
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-        }
-
-        .nav-item:hover {
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--sidebar-text-hover);
-        }
-
-        .nav-item.active {
-            background: var(--accent);
-            color: #ffffff;
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
-        }
-
-        .view-area {
-            position: relative;
-            flex: 1;
-            display: block;
-            min-height: 0;
-        }
-
-        .view {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            flex-direction: column;
-            opacity: 0;
-            pointer-events: none;
-            transform: scale(1);
-            transition: opacity 0.2s ease;
-        }
-
-
-        .view.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .panel {
-            background: var(--bg-panel);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            box-shadow: var(--shadow-sm);
-            padding: 20px;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-            transition: box-shadow 0.2s;
-        }
-
-        .header {
-            border: none;
-            background: transparent;
-            box-shadow: none;
-            padding: 0 0 4px 0;
-        }
-
-        .header h1 {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--text-main);
-            letter-spacing: -0.5px;
-        }
-
-        .semantic-panel {
-            height: 100%;
-            box-shadow: var(--shadow-md);
-        }
-
-        .panel-head {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            margin-bottom: 16px;
-        }
-
-        .panel-head h1 {
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--text-main);
-            margin: 0;
-        }
-        
-        .panel-head p {
-            font-size: 13px;
-            color: var(--text-muted);
-        }
-
-        .tag {
-            background: var(--accent-light);
-            color: var(--accent-text);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            border: none;
-        }
-
-        .control-strip {
-            display: grid;
-            grid-template-columns: 1.5fr 1fr auto;
-            gap: 16px;
-            align-items: end;
-            padding-bottom: 16px;
-            border-bottom: 1px solid var(--border-color);
-            margin-bottom: 16px;
-        }
-
-        .control-group label {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-            display: block;
-        }
-
-        .control-group input[type="text"] {
-            width: 100%;
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            font-size: 14px;
-            color: var(--text-main);
-            background: #fff;
-            outline: none;
-            box-sizing: border-box;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-
-        .control-group input[type="text"]:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-        }
-
-        input[type="range"] {
-            width: 100%;
-            accent-color: var(--accent);
-            height: 6px;
-            background: #e2e8f0;
-            border-radius: 3px;
-            outline: none;
-        }
-
-        .ghost-btn {
-            height: 38px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            background: #fff;
-            color: var(--text-main);
-            padding: 0 16px;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .ghost-btn:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-            background: var(--accent-light);
-        }
-
-        .mini-meta {
-            display: flex;
-            justify-content: space-between;
-            color: var(--text-muted);
-            font-size: 12px;
-            margin-bottom: 10px;
-        }
-
-        .semantic-layout {
-            display: grid;
-            grid-template-columns: 3fr 1fr;
-            gap: 16px;
-            flex: 1;
-            min-height: 0;
-            overflow: hidden;
-        }
-
-        .graph-area {
-            background-color: #fafafa;
-            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
-            background-size: 20px 20px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            position: relative;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.02);
-        }
-
-        .side-info {
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 16px;
-            background: #fff;
-            font-size: 13px;
-            overflow-y: auto;
-        }
-
-        .info-title {
-            font-weight: 600;
-            color: var(--text-main);
-            margin-bottom: 8px;
-            font-size: 14px;
-            padding-bottom: 8px;
-            border-bottom: 1px dashed var(--border-color);
-        }
-
-        .tooltip {
-            position: absolute;
-            padding: 8px 12px;
-            background: #1e293b;
-            color: #fff;
-            border-radius: 6px;
-            pointer-events: none;
-            font-size: 12px;
-            display: none;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            z-index: 100;
-        }
-
-        .side-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 8px;
-        }
-        .mini-icons {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .mini-icons img {
-            width: 40px;
-            height: 40px;
-            cursor: pointer;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));
-            transition: transform 0.15s ease;
-        }
-        .mini-icons img:hover { transform: translateY(-1px); }
-        .mini-icons .icon-hint {
-            font-size: 11px;
-            color: var(--text-muted);
-            line-height: 1.2;
-        }
-
-        .info-modal {
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.55);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 200;
-        }
-        .info-modal.active { display: flex; }
-        .info-card {
-            background: #fff;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: var(--shadow-md);
-            width: min(900px, 90vw);
-            max-height: 85vh;
-            overflow: auto;
-        }
-
-        .info-close {
-            margin-top: 12px;
-            padding: 8px 12px;
-            border-radius: 8px;
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            cursor: pointer;
-        }
-
-        .zoom-wrap {
-            width: 100%;
-            max-height: 72vh;
-            overflow: auto;
-            background: #f8fafc;
-            padding: 6px;
-            border-radius: 10px;
-        }
-        #sample-info .info-card {
-            width: auto;
-            max-width: 80vw;
-            max-height: none;
-            overflow: visible;
-        }
-
-        #sample-info .zoom-wrap {
-            width: auto;
-            max-width: 100%;
-            overflow: hidden;
-        }
-        /* --- 🆕 节点脉冲动画 --- */
-        @keyframes node-pulse-ring {
-            0% { transform: scale(1); opacity: 0.8; stroke-opacity: 0.8; }
-            50% { transform: scale(1.6); opacity: 0; stroke-opacity: 0; }
-            100% { transform: scale(1); opacity: 0; stroke-opacity: 0; }
-        }
-
-        .pulsing-node-halo {
-            animation: node-pulse-ring 2.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
-            transform-origin: center;
-            pointer-events: none; /* 确保不挡住鼠标点击 */
-        }
-
-        /* --- 🆕 引导气泡样式 --- */
-        .guide-label-group {
-            pointer-events: none;
-            transition: opacity 0.3s;
-        }
-
-        .guide-label-bg {
-            fill: #0f172a;
-            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));
-        }
-
-        .guide-label-text {
-            fill: #ffffff;
-            font-size: 11px;
-            font-weight: 600;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-    </style>
+    <link rel="stylesheet" href="./style.css">
 </head>
+
 <body>
 
     <!-- Portal -->
@@ -980,7 +39,8 @@
                     <div class="hero-frame" data-hero-frame="semantic"></div>
                     <div class="hero-frame" data-hero-frame="pose"></div>
 
-                    <img id="hero-image" src="./data/hero_image.jpg" alt="Original sample" style="opacity:0; pointer-events:none; position:absolute; left:0; top:0;">
+                    <img id="hero-image" src="./data/hero_image.jpg" alt="Original sample"
+                        style="opacity:0; pointer-events:none; position:absolute; left:0; top:0;">
                     <svg id="hero-overlay"></svg>
                 </div>
 
@@ -1003,22 +63,23 @@
 
                 <ul class="hero-captions" id="hero-captions"></ul>
 
-            <div class="coco-info">
-                <!-- 左侧文字 -->
-                <div class="coco-info-text">
-                    <h4>📊 关于 COCO 数据集</h4>
-                    <p><span class="highlight">COCO (Common Objects in Context)</span> 是目前最广泛使用的大规模物体检测、分割和关键点检测数据集。</p>
-                    <p>• 包含 <span class="highlight">330K+ 图像</span>，涵盖 <span class="highlight">80 个类别</span></p>
-                    <p>• 提供 <span class="highlight">150 万+</span> 物体实例标注</p>
-                    <p>• 支持物体检测、实例分割、关键点检测、全景分割等多种任务</p>
-                    <p>• 被广泛应用于计算机视觉研究与工业应用中</p>
-                </div>
+                <div class="coco-info">
+                    <!-- 左侧文字 -->
+                    <div class="coco-info-text">
+                        <h4>📊 关于 COCO 数据集</h4>
+                        <p><span class="highlight">COCO (Common Objects in Context)</span> 是目前最广泛使用的大规模物体检测、分割和关键点检测数据集。
+                        </p>
+                        <p>• 包含 <span class="highlight">330K+ 图像</span>，涵盖 <span class="highlight">80 个类别</span></p>
+                        <p>• 提供 <span class="highlight">150 万+</span> 物体实例标注</p>
+                        <p>• 支持物体检测、实例分割、关键点检测、全景分割等多种任务</p>
+                        <p>• 被广泛应用于计算机视觉研究与工业应用中</p>
+                    </div>
 
-                <!-- 右侧 overview 图 -->
-                <div class="coco-info-thumb">
-                    <img src="./data/overview.jpg" alt="COCO 数据集概览">
+                    <!-- 右侧 overview 图 -->
+                    <div class="coco-info-thumb">
+                        <img src="./data/overview.jpg" alt="COCO 数据集概览">
+                    </div>
                 </div>
-            </div>
 
             </section>
 
@@ -1081,7 +142,7 @@
             <button class="ghost-btn" id="back-to-portal-btn" type="button" style="margin-top:8px;">
                 ← 返回 Portal
             </button>
-            
+
             <div class="nav-group">
                 <button class="nav-item active" data-target="spatial-view">
                     <span>空间 / 尺度视图</span>
@@ -1105,10 +166,8 @@
         </aside>
 
         <section class="view-area">
-            <div class="header">
-                <h1>COCO-Verse 多视图分析</h1>
-            </div>
-            
+
+
             <!-- 空间视图 -->
             <section class="view active" id="spatial-view">
                 <section class="panel spatial-panel" style="height:100%;">
@@ -1142,7 +201,8 @@
                         <div class="control-group">
                             <label for="focusInput">聚焦类别</label>
                             <div style="display:flex; gap:8px;">
-                                <input type="text" id="focusInput" list="categoryOptions" placeholder="搜索节点 (如: person)...">
+                                <input type="text" id="focusInput" list="categoryOptions"
+                                    placeholder="搜索节点 (如: person)...">
                                 <button class="ghost-btn" id="clearFocus" type="button">清除</button>
                             </div>
                         </div>
@@ -1153,7 +213,8 @@
                             </label>
                             <input type="range" id="linkThreshold" min="0" max="1000" step="10" value="0">
                         </div>
-                        <button class="ghost-btn" id="resetFilters" type="button" style="height:42px; align-self:end;">重置筛选</button>
+                        <button class="ghost-btn" id="resetFilters" type="button"
+                            style="height:42px; align-self:end;">重置筛选</button>
                     </div>
 
                     <div class="mini-meta">
@@ -1163,14 +224,15 @@
 
                     <div class="semantic-layout">
                         <div id="semantic-graph" class="graph-area"></div>
-                        
+
                         <div id="selectionInfo" class="side-info">
                             <div class="side-header">
                                 <div class="info-title" style="margin:0;">节点详情</div>
                                 <div class="mini-icons">
                                     <div class="icon-hint">点击查看</div>
                                     <img src="./icon/Bar_Icon.png" alt="Bar Icon" id="semanticBarIcon">
-                                    <img src="./icon/Relation Matrix Icon.png" alt="Matrix Icon" id="semanticMatrixIcon">
+                                    <img src="./icon/Relation Matrix Icon.png" alt="Matrix Icon"
+                                        id="semanticMatrixIcon">
                                 </div>
                             </div>
                             <div id="selectionContent" style="color:var(--text-muted);">
@@ -1191,7 +253,8 @@
                         </div>
                         <div class="head-actions">
                             <div class="tag">Skeleton Graph</div>
-                            <button class="ghost-btn" id="pose-info-btn" type="button" style="margin-left: 10px;">指标说明</button>
+                            <button class="ghost-btn" id="pose-info-btn" type="button"
+                                style="margin-left: 10px;">指标说明</button>
                         </div>
                     </div>
                     <div id="pose-content" style="flex:1; min-height:0; overflow:hidden;"></div>
@@ -1239,11 +302,12 @@
                             <p>通过三个关联图表深度理解Transformer模型决策机制与人体结构关系</p>
                         </div>
                         <div class="head-actions">
-                            
+
                             <div class="tag">Model Interpretability</div>
 
 
-                            <button class="ghost-btn" id="pose-model-pipeline-btn" type="button" style="margin-right: auto; align-self: flex-end;">实验流程</button>
+                            <button class="ghost-btn" id="pose-model-pipeline-btn" type="button"
+                                style="margin-right: auto; align-self: flex-end;">实验流程</button>
                         </div>
                     </div>
                     <div id="pose-model-content" style="flex:1; min-height:0; overflow:auto;"></div>
@@ -1251,7 +315,7 @@
             </section>
         </section>
     </main>
-    
+
     <datalist id="categoryOptions"></datalist>
     <div class="tooltip" id="tooltip"></div>
 
@@ -1260,15 +324,19 @@
         <div class="info-card" style="max-width: 90vw;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                 <h3 style="margin: 0; font-size: 18px;">🖼️ YOLOv8推理结果</h3>
-                <button class="info-close" data-close="image-modal-000000000785" style="padding: 4px 12px; background: #f3f4f6; border: none; border-radius: 4px; cursor: pointer; color: #64748b; font-weight: 600;">✕</button>
+                <button class="info-close" data-close="image-modal-000000000785"
+                    style="padding: 4px 12px; background: #f3f4f6; border: none; border-radius: 4px; cursor: pointer; color: #64748b; font-weight: 600;">✕</button>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                <div style="padding: 12px; background: #ffffff; border-radius: 10px; border: 2px solid #667eea; text-align: center;">
+                <div
+                    style="padding: 12px; background: #ffffff; border-radius: 10px; border: 2px solid #667eea; text-align: center;">
                     <p style="margin: 0 0 10px; font-size: 12px; font-weight: 600; color: #667eea;">📸 推理可视化</p>
-                    <img src="./visualized/000000000785_viz.jpg" alt="推理结果" style="max-width: 100%; max-height: 400px; border-radius: 6px; object-fit: contain;">
+                    <img src="./visualized/000000000785_viz.jpg" alt="推理结果"
+                        style="max-width: 100%; max-height: 400px; border-radius: 6px; object-fit: contain;">
                     <p style="margin: 8px 0 0; font-size: 11px; color: #94a3b8;">ID: 000000000785</p>
                 </div>
-                <div id="keypoints-000000000785" style="padding: 12px; background: #f8fafc; border-radius: 10px; border: 2px solid #e2e8f0; overflow: auto; max-height: 450px;">
+                <div id="keypoints-000000000785"
+                    style="padding: 12px; background: #f8fafc; border-radius: 10px; border: 2px solid #e2e8f0; overflow: auto; max-height: 450px;">
                     <p style="text-align: center; color: #94a3b8;">加载中...</p>
                 </div>
             </div>
@@ -1279,15 +347,19 @@
         <div class="info-card" style="max-width: 90vw;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                 <h3 style="margin: 0; font-size: 18px;">🖼️ YOLOv8推理结果</h3>
-                <button class="info-close" data-close="image-modal-000000008021" style="padding: 4px 12px; background: #f3f4f6; border: none; border-radius: 4px; cursor: pointer; color: #64748b; font-weight: 600;">✕</button>
+                <button class="info-close" data-close="image-modal-000000008021"
+                    style="padding: 4px 12px; background: #f3f4f6; border: none; border-radius: 4px; cursor: pointer; color: #64748b; font-weight: 600;">✕</button>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                <div style="padding: 12px; background: #ffffff; border-radius: 10px; border: 2px solid #667eea; text-align: center;">
+                <div
+                    style="padding: 12px; background: #ffffff; border-radius: 10px; border: 2px solid #667eea; text-align: center;">
                     <p style="margin: 0 0 10px; font-size: 12px; font-weight: 600; color: #667eea;">📸 推理可视化</p>
-                    <img src="./visualized/000000008021_viz.jpg" alt="推理结果" style="max-width: 100%; max-height: 400px; border-radius: 6px; object-fit: contain;">
+                    <img src="./visualized/000000008021_viz.jpg" alt="推理结果"
+                        style="max-width: 100%; max-height: 400px; border-radius: 6px; object-fit: contain;">
                     <p style="margin: 8px 0 0; font-size: 11px; color: #94a3b8;">ID: 000000008021</p>
                 </div>
-                <div id="keypoints-000000008021" style="padding: 12px; background: #f8fafc; border-radius: 10px; border: 2px solid #e2e8f0; overflow: auto; max-height: 450px;">
+                <div id="keypoints-000000008021"
+                    style="padding: 12px; background: #f8fafc; border-radius: 10px; border: 2px solid #e2e8f0; overflow: auto; max-height: 450px;">
                     <p style="text-align: center; color: #94a3b8;">加载中...</p>
                 </div>
             </div>
@@ -1298,15 +370,19 @@
         <div class="info-card" style="max-width: 90vw;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                 <h3 style="margin: 0; font-size: 18px;">🖼️ YOLOv8推理结果</h3>
-                <button class="info-close" data-close="image-modal-000000009483" style="padding: 4px 12px; background: #f3f4f6; border: none; border-radius: 4px; cursor: pointer; color: #64748b; font-weight: 600;">✕</button>
+                <button class="info-close" data-close="image-modal-000000009483"
+                    style="padding: 4px 12px; background: #f3f4f6; border: none; border-radius: 4px; cursor: pointer; color: #64748b; font-weight: 600;">✕</button>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                <div style="padding: 12px; background: #ffffff; border-radius: 10px; border: 2px solid #667eea; text-align: center;">
+                <div
+                    style="padding: 12px; background: #ffffff; border-radius: 10px; border: 2px solid #667eea; text-align: center;">
                     <p style="margin: 0 0 10px; font-size: 12px; font-weight: 600; color: #667eea;">📸 推理可视化</p>
-                    <img src="./visualized/000000009483_viz.jpg" alt="推理结果" style="max-width: 100%; max-height: 400px; border-radius: 6px; object-fit: contain;">
+                    <img src="./visualized/000000009483_viz.jpg" alt="推理结果"
+                        style="max-width: 100%; max-height: 400px; border-radius: 6px; object-fit: contain;">
                     <p style="margin: 8px 0 0; font-size: 11px; color: #94a3b8;">ID: 000000009483</p>
                 </div>
-                <div id="keypoints-000000009483" style="padding: 12px; background: #f8fafc; border-radius: 10px; border: 2px solid #e2e8f0; overflow: auto; max-height: 450px;">
+                <div id="keypoints-000000009483"
+                    style="padding: 12px; background: #f8fafc; border-radius: 10px; border: 2px solid #e2e8f0; overflow: auto; max-height: 450px;">
                     <p style="text-align: center; color: #94a3b8;">加载中...</p>
                 </div>
             </div>
@@ -1316,7 +392,8 @@
     <div class="info-modal" id="pose-info-modal">
         <div class="info-card">
             <h3>姿态视图指标说明</h3>
-            <p style="margin:4px 0 10px; color:var(--text-muted); font-size:13px;">本视图通过多种方式可视化COCO数据集中所有人体姿态的聚合统计信息。</p>
+            <p style="margin:4px 0 10px; color:var(--text-muted); font-size:13px;">本视图通过多种方式可视化COCO数据集中所有人体姿态的聚合统计信息。
+            </p>
             <div class="zoom-wrap" style="font-size: 13px; line-height: 1.6;">
                 <h4 style="margin-top: 0; margin-bottom: 8px; color: #1e293b;">主要可视化模块</h4>
                 <ul style="margin: 0; padding-left: 20px;">
@@ -1344,9 +421,9 @@
                             <li><strong>运动轨迹</strong>: 开启后，会根据标准差模拟出每个关节点可能的运动轨迹，提供一种动态的视角。</li>
                         </ul>
                     </li>
-                     <li style="margin-bottom: 12px;">
+                    <li style="margin-bottom: 12px;">
                         <strong>统计概览 (底部面板)</strong><br>
-                       该面板展示了从数据中提取的宏观统计信息，如所有关节点的“平均可见性”以及“最稳定”和“最不稳定”的关节点。当聚焦于某个关节点时，会显示其详细数值。
+                        该面板展示了从数据中提取的宏观统计信息，如所有关节点的“平均可见性”以及“最稳定”和“最不稳定”的关节点。当聚焦于某个关节点时，会显示其详细数值。
                     </li>
                 </ul>
             </div>
@@ -1381,13 +458,16 @@
             <p style="margin:4px 0 10px; color:var(--text-muted); font-size:13px;">✨ 如何通过数据分析理解AI模型的决策过程</p>
 
             <!-- 示例推理结果图片 -->
-            <div style="margin-top: 16px; padding: 12px; background: #ffffff; border-radius: 10px; border: 2px solid #667eea; text-align: center;">
+            <div
+                style="margin-top: 16px; padding: 12px; background: #ffffff; border-radius: 10px; border: 2px solid #667eea; text-align: center;">
                 <p style="margin: 0 0 10px; font-size: 12px; font-weight: 600; color: #667eea;">📸 YOLOv8识别结果示例</p>
-                <img src="./visualized/000000000785_viz.jpg" alt="YOLOv8推理结果" style="max-width: 100%; max-height: 300px; border-radius: 6px; object-fit: contain;">
+                <img src="./visualized/000000000785_viz.jpg" alt="YOLOv8推理结果"
+                    style="max-width: 100%; max-height: 300px; border-radius: 6px; object-fit: contain;">
                 <p style="margin: 8px 0 0; font-size: 11px; color: #94a3b8;">✓ 17个身体关键点自动检测 | 真实照片 | 模型给出置信度评分</p>
             </div>
 
-            <div style="margin-top: 16px; padding: 14px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
+            <div
+                style="margin-top: 16px; padding: 14px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
                 <h4 style="margin: 0 0 10px; font-size: 14px; font-weight: 700; color: #1e293b;">
                     📊 完整实验流程
                 </h4>
@@ -1397,7 +477,7 @@
                         &nbsp;&nbsp;1️⃣ 模型给出的"置信度"是否可靠？能否信任它的判断？<br>
                         &nbsp;&nbsp;2️⃣ 为什么模型识别上半身准确，下半身却容易出错？<br>
                     </p>
-                    
+
                     <p style="margin: 0 0 12px;">
                         <strong style="color: #667eea;">第一步 - 准备真实数据</strong><br>
                         &nbsp;&nbsp;📷 11万张真实照片（来自COCO数据集）<br>
@@ -1412,21 +492,22 @@
                         &nbsp;&nbsp;&nbsp;&nbsp;• 按照脸部→脚部的顺序排列，从头到脚显示识别难度<br>
                         &nbsp;&nbsp;&nbsp;&nbsp;• 曲线呈现下降趋势，说明下肢识别比上肢困难<br>
                         &nbsp;&nbsp;&nbsp;&nbsp;• 蓝色点=高准确(>70%)、橙色点=中等(60-70%)、红色点=低准确(<60%)<br>
-                        &nbsp;&nbsp;<br>
-                        &nbsp;&nbsp;<strong>📊 图表2：COCO可见度 ↔ YOLO置信度的关系</strong><br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;• X轴：真实COCO标注中各关键点的可见度<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;• Y轴：模型预测的置信度<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;• 散点：每个关键点的实际数据分布<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;• 解读：<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;关键点的可见度直接影响模型识别能力。遮挡越多、物体越小，识别就越难——这很正常。<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;从散点图可以看出，YOLO已经完全"学会"了COCO的特征分布，<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;置信度高低主要取决于训练数据中的标注质量，而不是新数据的实际难度。
+                            &nbsp;&nbsp;<br>
+                            &nbsp;&nbsp;<strong>📊 图表2：COCO可见度 ↔ YOLO置信度的关系</strong><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;• X轴：真实COCO标注中各关键点的可见度<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;• Y轴：模型预测的置信度<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;• 散点：每个关键点的实际数据分布<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;• 解读：<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;关键点的可见度直接影响模型识别能力。遮挡越多、物体越小，识别就越难——这很正常。<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;从散点图可以看出，YOLO已经完全"学会"了COCO的特征分布，<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;置信度高低主要取决于训练数据中的标注质量，而不是新数据的实际难度。
                     </p>
 
                 </div>
             </div>
 
-            <div style="margin-top: 16px; padding: 14px; background: #e0e7ff; border-radius: 10px; border-left: 4px solid #6366f1;">
+            <div
+                style="margin-top: 16px; padding: 14px; background: #e0e7ff; border-radius: 10px; border-left: 4px solid #6366f1;">
                 <h4 style="margin: 0 0 8px; font-size: 13px; font-weight: 700; color: #4338ca;">
                     🚀 这个分析有什么特殊之处？
                 </h4>
@@ -1435,7 +516,7 @@
                         ✅ <strong>完全基于真实数据</strong> - 不是虚构，11万张真实COCO照片<br>
                         ✅ <strong>交互式探索</strong> - 可以点击"查看推理结果"看原始图像和识别过程<br>
                         ✅ <strong>科学严谨</strong> - 用统计数据支持每一个结论<br>
-                    
+
                     </p>
                 </div>
             </div>
@@ -1445,19 +526,7 @@
 
     <!-- 样本详情模态框 -->
     <div class="info-modal" id="sample-info">
-        <div class="info-card"
-            style="
-                background: rgba(255, 255, 255, 0.12);
-                backdrop-filter: blur(22px) saturate(180%);
-                -webkit-backdrop-filter: blur(22px) saturate(180%);
-                border: 1px solid rgba(255, 255, 255, 0.28);
-                border-radius: 16px;
-                padding: 24px;
-                color: #e5e7eb;
-                width: min(900px, 90vw);
-                box-shadow: 0 20px 50px rgba(0,0,0,0.55);
-            "
-        >
+        <div class="info-card modal-glass-dark">
             <h3 style="margin:0 0 10px; font-size:20px; font-weight:700; color:#f1f5f9;">
                 样本 #457718 详细信息
             </h3>
@@ -1466,27 +535,23 @@
                 以下内容基于该样本在 COCO 数据集中的标注信息。
             </p>
 
-            <div class="zoom-wrap"
-                style="
+            <div class="zoom-wrap" style="
                     background: rgba(255,255,255,0.05);
                     padding: 14px;
                     border-radius: 12px;
                     border: 1px solid rgba(255,255,255,0.12);
                     overflow: hidden;
-                "
-            >
+                ">
                 <div style="display:flex; gap:20px; align-items:flex-start;">
 
                     <!-- 左侧图片 -->
                     <div style="flex:0 0 auto;">
-                        <img src="./data/hero_image.jpg"
-                            style="
+                        <img src="./data/hero_image.jpg" style="
                                 display:block;
                                 max-width:360px;
                                 border-radius:12px;
                                 box-shadow:0 10px 30px rgba(0,0,0,0.45);
-                            "
-                        >
+                            ">
                         <div style="margin-top:10px; font-size:12px; color:#cbd5e1;">
                             图像分辨率：<strong style="color:#a5b4fc;">640 × 426</strong>
                         </div>
@@ -1524,9 +589,7 @@
                 </div>
             </div>
 
-            <button class="info-close"
-                    data-close="sample-info"
-                    style="
+            <button class="info-close" data-close="sample-info" style="
                         margin-top:16px;
                         padding:10px 16px;
                         border-radius:10px;
@@ -1537,8 +600,7 @@
                         font-size:13px;
                         font-weight:600;
                         box-shadow:0 6px 16px rgba(99,102,241,0.45);
-                    "
-            >
+                    ">
                 关闭
             </button>
         </div>
@@ -1588,7 +650,7 @@
                     }
                 }
             });
-            
+
             // 点击模态框背景关闭
             document.addEventListener('click', (e) => {
                 if (e.target.classList.contains('info-modal') && e.target === e.currentTarget) {
@@ -1597,16 +659,16 @@
             });
         };
         window.addEventListener('switch-view', (e) => {
-                const targetId = e.detail; // 例如 "bias-view"
-                if (targetId) {
-                    activateView(targetId);
-                }
-            });
+            const targetId = e.detail; // 例如 "bias-view"
+            if (targetId) {
+                activateView(targetId);
+            }
+        });
 
         semanticBarIcon?.addEventListener('click', () => openModal('bar-info'));
         semanticMatrixIcon?.addEventListener('click', () => openModal('matrix-info'));
         poseInfoBtn?.addEventListener('click', () => openModal('pose-info-modal'));
-        
+
         // 绑定实验流程按钮
         const poseModelPipelineBtn = document.getElementById('pose-model-pipeline-btn');
         poseModelPipelineBtn?.addEventListener('click', () => openModal('pipeline-info'));
@@ -1671,7 +733,7 @@
 
         makeZoomable(document.querySelector('#bar-info .zoom-wrap'));
         makeZoomable(document.querySelector('#matrix-info .zoom-wrap'));
-        
+
         const slider = document.getElementById('linkThreshold');
         const valDisplay = document.getElementById('thresholdValue');
         if (slider && valDisplay) {
@@ -1736,85 +798,85 @@
         // 关键点数据硬编码
         const keypointsData = {
             '000000000785': [
-                {name: "nose", x: 367.66, y: 79.39, confidence: 0.986},
-                {name: "left_eye", x: 375.05, y: 72.01, confidence: 0.976},
-                {name: "right_eye", x: 361.23, y: 73.03, confidence: 0.899},
-                {name: "left_ear", x: 388.43, y: 76.40, confidence: 0.938},
-                {name: "right_ear", x: 355.32, y: 78.67, confidence: 0.476},
-                {name: "left_shoulder", x: 412.64, y: 115.84, confidence: 0.999},
-                {name: "right_shoulder", x: 358.61, y: 119.96, confidence: 0.994},
-                {name: "left_elbow", x: 445.63, y: 156.17, confidence: 0.997},
-                {name: "right_elbow", x: 347.03, y: 159.03, confidence: 0.965},
-                {name: "left_wrist", x: 441.33, y: 164.47, confidence: 0.991},
-                {name: "right_wrist", x: 320.46, y: 182.00, confidence: 0.950},
-                {name: "left_hip", x: 433.94, y: 211.36, confidence: 0.9996},
-                {name: "right_hip", x: 396.64, y: 211.59, confidence: 0.999},
-                {name: "left_knee", x: 429.20, y: 284.81, confidence: 0.999},
-                {name: "right_knee", x: 371.32, y: 276.89, confidence: 0.997},
-                {name: "left_ankle", x: 475.95, y: 359.27, confidence: 0.990},
-                {name: "right_ankle", x: 403.14, y: 345.17, confidence: 0.985}
+                { name: "nose", x: 367.66, y: 79.39, confidence: 0.986 },
+                { name: "left_eye", x: 375.05, y: 72.01, confidence: 0.976 },
+                { name: "right_eye", x: 361.23, y: 73.03, confidence: 0.899 },
+                { name: "left_ear", x: 388.43, y: 76.40, confidence: 0.938 },
+                { name: "right_ear", x: 355.32, y: 78.67, confidence: 0.476 },
+                { name: "left_shoulder", x: 412.64, y: 115.84, confidence: 0.999 },
+                { name: "right_shoulder", x: 358.61, y: 119.96, confidence: 0.994 },
+                { name: "left_elbow", x: 445.63, y: 156.17, confidence: 0.997 },
+                { name: "right_elbow", x: 347.03, y: 159.03, confidence: 0.965 },
+                { name: "left_wrist", x: 441.33, y: 164.47, confidence: 0.991 },
+                { name: "right_wrist", x: 320.46, y: 182.00, confidence: 0.950 },
+                { name: "left_hip", x: 433.94, y: 211.36, confidence: 0.9996 },
+                { name: "right_hip", x: 396.64, y: 211.59, confidence: 0.999 },
+                { name: "left_knee", x: 429.20, y: 284.81, confidence: 0.999 },
+                { name: "right_knee", x: 371.32, y: 276.89, confidence: 0.997 },
+                { name: "left_ankle", x: 475.95, y: 359.27, confidence: 0.990 },
+                { name: "right_ankle", x: 403.14, y: 345.17, confidence: 0.985 }
             ],
             '000000008021': [
-                {name: "nose", x: 316.96, y: 142.34, confidence: 0.991},
-                {name: "left_eye", x: 327.49, y: 132.20, confidence: 0.978},
-                {name: "right_eye", x: 304.25, y: 134.21, confidence: 0.973},
-                {name: "left_ear", x: 344.58, y: 143.25, confidence: 0.878},
-                {name: "right_ear", x: 290.61, y: 149.31, confidence: 0.776},
-                {name: "left_shoulder", x: 385.18, y: 211.07, confidence: 0.992},
-                {name: "right_shoulder", x: 273.53, y: 221.39, confidence: 0.994},
-                {name: "left_elbow", x: 421.64, y: 308.85, confidence: 0.909},
-                {name: "right_elbow", x: 264.84, y: 318.70, confidence: 0.939},
-                {name: "left_wrist", x: 372.25, y: 311.78, confidence: 0.841},
-                {name: "right_wrist", x: 277.93, y: 288.15, confidence: 0.880},
-                {name: "left_hip", x: 376.02, y: 378.31, confidence: 0.888},
-                {name: "right_hip", x: 303.09, y: 379.02, confidence: 0.906},
-                {name: "left_knee", x: 373.44, y: 443.30, confidence: 0.122},
-                {name: "right_knee", x: 295.79, y: 432.90, confidence: 0.147},
-                {name: "left_ankle", x: 364.79, y: 460.70, confidence: 0.010},
-                {name: "right_ankle", x: 327.56, y: 436.86, confidence: 0.012}
+                { name: "nose", x: 316.96, y: 142.34, confidence: 0.991 },
+                { name: "left_eye", x: 327.49, y: 132.20, confidence: 0.978 },
+                { name: "right_eye", x: 304.25, y: 134.21, confidence: 0.973 },
+                { name: "left_ear", x: 344.58, y: 143.25, confidence: 0.878 },
+                { name: "right_ear", x: 290.61, y: 149.31, confidence: 0.776 },
+                { name: "left_shoulder", x: 385.18, y: 211.07, confidence: 0.992 },
+                { name: "right_shoulder", x: 273.53, y: 221.39, confidence: 0.994 },
+                { name: "left_elbow", x: 421.64, y: 308.85, confidence: 0.909 },
+                { name: "right_elbow", x: 264.84, y: 318.70, confidence: 0.939 },
+                { name: "left_wrist", x: 372.25, y: 311.78, confidence: 0.841 },
+                { name: "right_wrist", x: 277.93, y: 288.15, confidence: 0.880 },
+                { name: "left_hip", x: 376.02, y: 378.31, confidence: 0.888 },
+                { name: "right_hip", x: 303.09, y: 379.02, confidence: 0.906 },
+                { name: "left_knee", x: 373.44, y: 443.30, confidence: 0.122 },
+                { name: "right_knee", x: 295.79, y: 432.90, confidence: 0.147 },
+                { name: "left_ankle", x: 364.79, y: 460.70, confidence: 0.010 },
+                { name: "right_ankle", x: 327.56, y: 436.86, confidence: 0.012 }
             ],
             '000000009483': [
-                {name: "nose", x: 112.61, y: 102.21, confidence: 0.989},
-                {name: "left_eye", x: 120.34, y: 95.16, confidence: 0.956},
-                {name: "right_eye", x: 104.04, y: 94.37, confidence: 0.970},
-                {name: "left_ear", x: 128.53, y: 104.33, confidence: 0.662},
-                {name: "right_ear", x: 86.39, y: 101.49, confidence: 0.831},
-                {name: "left_shoulder", x: 144.17, y: 155.65, confidence: 0.994},
-                {name: "right_shoulder", x: 62.54, y: 159.51, confidence: 0.993},
-                {name: "left_elbow", x: 160.57, y: 215.88, confidence: 0.976},
-                {name: "right_elbow", x: 61.05, y: 229.95, confidence: 0.967},
-                {name: "left_wrist", x: 148.70, y: 263.54, confidence: 0.963},
-                {name: "right_wrist", x: 114.12, y: 263.67, confidence: 0.959},
-                {name: "left_hip", x: 138.99, y: 290.75, confidence: 0.9955},
-                {name: "right_hip", x: 84.49, y: 294.25, confidence: 0.9950},
-                {name: "left_knee", x: 135.88, y: 391.34, confidence: 0.965},
-                {name: "right_knee", x: 75.87, y: 397.19, confidence: 0.962},
-                {name: "left_ankle", x: 125.19, y: 476.47, confidence: 0.643},
-                {name: "right_ankle", x: 78.64, y: 478.75, confidence: 0.622}
+                { name: "nose", x: 112.61, y: 102.21, confidence: 0.989 },
+                { name: "left_eye", x: 120.34, y: 95.16, confidence: 0.956 },
+                { name: "right_eye", x: 104.04, y: 94.37, confidence: 0.970 },
+                { name: "left_ear", x: 128.53, y: 104.33, confidence: 0.662 },
+                { name: "right_ear", x: 86.39, y: 101.49, confidence: 0.831 },
+                { name: "left_shoulder", x: 144.17, y: 155.65, confidence: 0.994 },
+                { name: "right_shoulder", x: 62.54, y: 159.51, confidence: 0.993 },
+                { name: "left_elbow", x: 160.57, y: 215.88, confidence: 0.976 },
+                { name: "right_elbow", x: 61.05, y: 229.95, confidence: 0.967 },
+                { name: "left_wrist", x: 148.70, y: 263.54, confidence: 0.963 },
+                { name: "right_wrist", x: 114.12, y: 263.67, confidence: 0.959 },
+                { name: "left_hip", x: 138.99, y: 290.75, confidence: 0.9955 },
+                { name: "right_hip", x: 84.49, y: 294.25, confidence: 0.9950 },
+                { name: "left_knee", x: 135.88, y: 391.34, confidence: 0.965 },
+                { name: "right_knee", x: 75.87, y: 397.19, confidence: 0.962 },
+                { name: "left_ankle", x: 125.19, y: 476.47, confidence: 0.643 },
+                { name: "right_ankle", x: 78.64, y: 478.75, confidence: 0.622 }
             ]
         };
-        
+
         // 模态框已在 HTML 中硬编码定义
         // 直接初始化按钮生成
         function initImageModals() {
             const imageIds = ['000000000785', '000000008021', '000000009483'];
             generateImageSelectionButtons(imageIds);
-            
+
             // 为每个图片渲染关键点数据
             imageIds.forEach(imageId => {
                 if (keypointsData[imageId]) {
                     renderKeypointsTable(imageId, keypointsData[imageId]);
                 }
             });
-            
+
             console.log(`✓ 已初始化 ${imageIds.length} 个图片选择按钮`);
         }
-        
+
         // 渲染关键点表格
         function renderKeypointsTable(imageId, keypoints) {
             const container = document.getElementById(`keypoints-${imageId}`);
             if (!container) return;
-            
+
             // COCO 标准的骨架连接关系
             const connections = [
                 [0, 1], [0, 2], [1, 3], [2, 4],        // 头部
@@ -1824,14 +886,14 @@
                 [11, 12],                               // 髋
                 [11, 13], [13, 15], [12, 14], [14, 16] // 腿部
             ];
-            
+
             // 创建 SVG 骨架图
             let html = `
             <div style="margin-bottom: 12px;">
                 <h4 style="margin: 0 0 8px; font-size: 14px; font-weight: 700; color: #1e293b;">🦴 骨架可视化</h4>
                 <svg width="100%" height="250" style="background: #fff; border: 1px solid #e2e8f0; border-radius: 6px;">
                     <!-- 骨架连线 -->`;
-            
+
             // 寻找坐标范围（用于规范化）
             const xs = keypoints.map(k => k.x);
             const ys = keypoints.map(k => k.y);
@@ -1842,11 +904,11 @@
             const padding = 20;
             const svgWidth = 280;
             const svgHeight = 230;
-            
+
             // 规范化坐标函数
             const normX = (x) => ((x - minX) / width) * (svgWidth - padding * 2) + padding;
             const normY = (y) => ((y - minY) / height) * (svgHeight - padding * 2) + padding;
-            
+
             // 绘制连线
             connections.forEach(([i, j]) => {
                 if (i < keypoints.length && j < keypoints.length) {
@@ -1858,14 +920,14 @@
                     html += `<line x1="${normX(k1.x)}" y1="${normY(k1.y)}" x2="${normX(k2.x)}" y2="${normY(k2.y)}" stroke="${color}" stroke-width="2" opacity="${opacity}"/>`;
                 }
             });
-            
+
             // 绘制关键点
             keypoints.forEach((kp, idx) => {
                 const color = kp.confidence > 0.8 ? '#10b981' : kp.confidence > 0.6 ? '#f59e0b' : '#ef4444';
                 const radius = 4 + kp.confidence * 2;
                 html += `<circle cx="${normX(kp.x)}" cy="${normY(kp.y)}" r="${radius}" fill="${color}" opacity="0.9" stroke="white" stroke-width="1.5"/>`;
             });
-            
+
             html += `
                 </svg>
             </div>
@@ -1873,7 +935,7 @@
             <div style="margin-bottom: 12px;">
                 <h4 style="margin: 0 0 8px; font-size: 14px; font-weight: 700; color: #1e293b;">📊 置信度排序</h4>
                 <div style="font-size: 11px; max-height: 180px; overflow-y: auto;">`;
-            
+
             // 按置信度排序
             const sorted = [...keypoints].sort((a, b) => b.confidence - a.confidence);
             sorted.forEach((kp, idx) => {
@@ -1891,7 +953,7 @@
                     </div>
                 </div>`;
             });
-            
+
             html += `
                 </div>
             </div>
@@ -1900,15 +962,15 @@
                 <strong>📈 平均置信度:</strong> ${(keypoints.reduce((sum, kp) => sum + kp.confidence, 0) / keypoints.length * 100).toFixed(1)}%<br>
                 <strong>🎯 高置信度:</strong> ${keypoints.filter(k => k.confidence > 0.8).length}/17 点
             </div>`;
-            
+
             container.innerHTML = html;
         }
-        
+
         // 生成图片选择按钮
         function generateImageSelectionButtons(imageIds) {
             // 尝试多个容器查找方式
             let container = document.getElementById('image-explorer-wrapper');
-            
+
             // 如果直接ID找不到，可能还没创建，等待后重试
             if (!container) {
                 // 等待100ms后重试
@@ -1920,16 +982,16 @@
                 }, 100);
                 return;
             }
-            
+
             doGenerateButtons(container, imageIds);
         }
-        
+
         function doGenerateButtons(container, imageIds) {
             let buttonsHtml = `
             <div style="display: flex; flex-direction: column; gap: 12px; padding: 24px;">
                 <h3 style="margin: 0 0 16px; font-size: 18px; font-weight: 700; color: #1e293b;">🖼️ 图片选择</h3>
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">`;
-            
+
             imageIds.forEach(imageId => {
                 buttonsHtml += `
                     <button class="ghost-btn" onclick="document.getElementById('image-modal-${imageId}').classList.add('active')" 
@@ -1937,14 +999,14 @@
                         📸 查看推理结果
                     </button>`;
             });
-            
+
             buttonsHtml += `
                 </div>
             </div>`;
-            
+
             container.innerHTML = buttonsHtml;
         }
-        
+
         // 页面加载后初始化图片模态框
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initImageModals);
@@ -1953,4 +1015,5 @@
         }
     </script>
 </body>
+
 </html>

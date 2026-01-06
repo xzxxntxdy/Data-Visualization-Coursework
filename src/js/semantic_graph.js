@@ -55,7 +55,7 @@ const svgRoot = d3
   .append("svg")
   .attr("width", width)
   .attr("height", height)
-  .style("background-color", "#ffffff");
+  .style("background-color", "transparent");
 
 // --- 关键层级结构 ---
 const g = svgRoot.append("g");

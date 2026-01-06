@@ -45,15 +45,15 @@ const BODY_PARTS = {
 
 const THEME = Object.freeze({
     colors: {
-        bg: "#ffffff",
-        card: "#f8fafc",
+        bg: "transparent",
+        card: "rgba(15, 23, 42, 0.6)", // Slate 900 Glass
         text: { 
-            main: "#1e293b",
-            sub: "#64748b",
-            accent: "#0ea5e9"
+            main: "#f8fafc",    // Slate 50
+            sub: "#94a3b8",     // Slate 400
+            accent: "#818cf8"   // Indigo 400
         },
-        bone: "#334155", // 深炭灰骨架
-        grid: "rgba(0,0,0,0.08)"
+        bone: "#94a3b8", // Slate 400
+        grid: "rgba(255,255,255,0.08)"
     },
     stats: { sigmaInner: 1, sigmaOuter: 3 },
     skeleton: { 
