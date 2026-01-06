@@ -47,7 +47,7 @@ src/data/person_keypoints_val2017.json
 # - src/data/coco_vs_yolo_scatter.json (~7KB)
 
 # 大型数据目录
-/docs
+docs/
 /data/
 /data/train2017.zip
 train/spatial
